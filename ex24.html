@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Exchange</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* === СТИЛИ === */
+        :root {
+            /* Цвет фона body совпадает с цветом карточки */
+            --bg-body: #1a1e29; 
+            --bg-card: #1a1e29;
+            --bg-input: #252b3b;
+            --text-main: #ffffff;
+            --text-muted: #8492a6;
+            --accent-buy: #10b981;  
+            --accent-sell: #ef4444; 
+            --accent-sell-blue: #3b82f6; 
+            --accent-blue: #3b82f6;
+            --error: #ef4444;
+            --radius: 20px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; outline: none; font-family: 'Inter', sans-serif; }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px;
+            padding-top: 40px;
+        }
+
+        .exchange-widget {
+            background-color: var(--bg-card);
+            width: 100%;
+            max-width: 480px;
+            min-height: 600px; 
+            padding: 25px;
+            border-radius: var(--radius);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.4); 
+            border: 1px solid rgba(255,255,255,0.05);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ЗАГОЛОВОК */
+        .app-header {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, #2dd4bf 0%, #3b82f6 50%, #d946ef 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            flex-shrink: 0;
+        }
+
+        /* TABS */
+        .tabs-container {
+            display: flex;
+            background-color: var(--bg-input);
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 15px; 
+            flex-shrink: 0;
+        }
+        .tab-btn {
+            flex: 1; padding: 10px; border: none; background: transparent;
+            color: var(--text-muted); font-weight: 600; cursor: pointer;
+            border-radius: 8px; transition: all 0.2s; font-size: 14px;
+        }
+        .tab-btn.active {
+            background-color: var(--bg-card); color: var(--text-main);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        body[data-mode="buy"] .tab-btn[data-tab="buy"] { color: var(--accent-buy); }
+        body[data-mode="sell"] .tab-btn[data-tab="sell"] { color: var(--accent-sell-blue); }
+
+        /* INPUTS */
+        .input-group {
+            background-color: var(--bg-input); border-radius: 12px; padding: 14px;
+            border: 1px solid transparent; position: relative; z-index: 10; 
+            transition: all 0.3s ease; flex-shrink: 0;
+        }
+        
+        .input-group.group-active { z-index: 1000; border-color: rgba(255,255,255,0.2); }
+        .input-group.error-state { border-color: var(--error); box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15); }
+
+        .label-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; color: var(--text-muted); }
+        .input-row { display: flex; justify-content: space-between; align-items: center; }
+        .amount-input { background: transparent; border: none; color: var(--text-main); font-size: 22px; font-weight: 600; width: 50%; }
+        
+        /* SELECTORS */
+        .currency-selector {
+            display: flex; align-items: center; gap: 8px; background-color: rgba(255, 255, 255, 0.05);
+            padding: 5px 10px 5px 6px; border-radius: 20px; cursor: pointer; user-select: none; min-width: 130px;
+        }
+        .currency-selector:hover { background-color: rgba(255, 255, 255, 0.1); }
+        .currency-icon { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #fff; flex-shrink: 0; }
+        
+        .currency-icon.flag-icon { 
+            font-size: 18px; 
+            background: rgba(255,255,255,0.1); 
+            display: flex; align-items: center; justify-content: center;
+            padding-bottom: 1px;
+        }
+
+        /* Crypto Gradients */
+        .btc-bg { background: linear-gradient(135deg, #f7931a, #e67e00); }
+        .eth-bg { background: linear-gradient(135deg, #627eea, #4a62bd); }
+        .trx-bg { background: linear-gradient(135deg, #ff0013, #bf000e); }
+        .sol-bg { background: linear-gradient(135deg, #9945FF, #14F195); }
+        .xrp-bg { background: linear-gradient(135deg, #23292f, #15191d); }
+        .doge-bg { background: linear-gradient(135deg, #cb9800, #a87e00); }
+        .waves-bg { background: linear-gradient(135deg, #0155ff, #0036a3); }
+        .xmr-bg { background: linear-gradient(135deg, #ff6600, #d45500); }
+        .xlm-bg { background: linear-gradient(135deg, #14b6e7, #087596); }
+        .usdt-bg { background: linear-gradient(135deg, #26a17b, #165c46); }
+        .bnb-bg { background: linear-gradient(135deg, #f3ba2f, #dcb21c); }
+        .ltc-bg { background: linear-gradient(135deg, #345d9d, #254270); }
+        
+        .currency-code { font-weight: 600; font-size: 14px; margin-right: auto; }
+
+        /* Dropdown */
+        .dropdown-menu {
+            position: absolute; top: 110%; right: 0; width: 300px; max-height: 300px;
+            overflow-y: auto; background-color: #202633; border-radius: 12px; padding: 5px;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.9); display: none; border: 1px solid rgba(255,255,255,0.1); 
+            z-index: 2000 !important;
+        }
+        .dropdown-menu::-webkit-scrollbar { width: 5px; }
+        .dropdown-menu::-webkit-scrollbar-thumb { background: #3b4557; border-radius: 3px; }
+        .dropdown-item { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        .dropdown-item:hover { background-color: rgba(255,255,255,0.05); }
+
+        /* СТРЕЛКА (DIVIDER) */
+        .middle-container {
+            display: flex; flex-direction: column; width: 100%;
+        }
+        .divider-icon { 
+            display: flex; justify-content: center; 
+            margin: -18px 0 -18px; 
+            position: relative; z-index: 30; 
+        }
+        .divider-circle {
+            background: var(--bg-card); 
+            border: 4px solid var(--bg-body); 
+            color: var(--text-muted); 
+            width: 40px; height: 40px;
+            border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 14px; 
+            cursor: pointer;
+            transition: transform 0.4s ease, color 0.3s, border-color 0.3s;
+        }
+        .divider-circle:hover { color: white; border-color: var(--bg-input); }
+        
+        .arrow-rotate-down { transform: rotate(0deg); }
+        .arrow-rotate-up { transform: rotate(180deg); }
+
+        /* BUTTON */
+        .exchange-btn {
+            width: 100%; padding: 16px; margin-top: 15px; color: white; border: none; border-radius: 12px;
+            font-size: 16px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; transition: 0.3s;
+        }
+        .exchange-btn:disabled { background-color: #374151 !important; color: #9ca3af; cursor: not-allowed; }
+        body[data-mode="buy"] .exchange-btn { background: var(--accent-buy); }
+        body[data-mode="buy"] .exchange-btn:hover { background: #059669; }
+        body[data-mode="sell"] .exchange-btn { background: var(--accent-sell-blue); }
+        body[data-mode="sell"] .exchange-btn:hover { background: #2563eb; }
+
+        /* Блок ошибки (ВЕРНУЛ СТАРЫЙ СТИЛЬ) */
+        .limit-error { 
+            background-color: rgba(239, 68, 68, 0.15); 
+            color: #eaeaea; 
+            font-size: 13px; 
+            font-weight: 600; 
+            text-align: center; 
+            margin-top: 15px; 
+            padding: 12px;
+            border-radius: 8px;
+            display: none; 
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .reserve-box {
+            background-color: rgba(16, 185, 129, 0.15); 
+            color: #10b981; 
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 15px;
+            width: 100%;
+        }
+
+        /* Modal */
+        .modal-sheet {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #1a1e29; padding: 25px; opacity: 0; pointer-events: none; transform: scale(0.95);
+            transition: all 0.3s ease; z-index: 3000 !important; display: flex; flex-direction: column; border-radius: var(--radius);
+        }
+        .modal-sheet.open { opacity: 1; pointer-events: all; transform: scale(1); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .close-modal { cursor: pointer; font-size: 20px; color: var(--text-muted); }
+
+        .modal-input {
+            width: 100%; background-color: var(--bg-input); border: 1px solid rgba(255,255,255,0.1);
+            padding: 15px; border-radius: 12px; color: white; font-size: 15px; margin-bottom: 20px;
+        }
+        .modal-input:focus { border-color: var(--accent-blue); }
+        .modal-input.input-error { border-color: var(--error); box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15); }
+        
+        /* New Select for Networks */
+        .modal-select {
+            width: 100%; background-color: var(--bg-input); border: 1px solid rgba(255,255,255,0.1);
+            padding: 15px; border-radius: 12px; color: white; font-size: 15px; margin-bottom: 20px;
+            cursor: pointer; outline: none; appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1em;
+        }
+
+        .payment-method {
+            display: flex; align-items: center; gap: 15px; padding: 15px; margin-bottom: 10px;
+            background-color: rgba(255,255,255,0.05); border-radius: 12px; cursor: pointer; transition: 0.2s; border: 1px solid transparent;
+        }
+        .payment-method:hover { background-color: rgba(255,255,255,0.1); border-color: var(--accent-buy); }
+        .pm-icon { width: 40px; height: 40px; background: #fff; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        
+        .info-box-blue {
+            background-color: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.4); border-radius: 12px; padding: 20px; margin-bottom: 20px;
+        }
+        .info-header { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; color: #60a5fa; font-size: 14px; font-weight: 600; }
+        
+        .amount-display-block { text-align: center; margin-bottom: 20px; }
+        .amount-label { font-size: 12px; color: #93c5fd; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+        .amount-value { font-size: 28px; font-weight: 700; color: white; }
+
+        .crypto-address-box {
+            background-color: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px;
+            font-family: monospace; font-size: 12px; color: white; word-break: break-all;
+            display: flex; justify-content: space-between; align-items: center; gap: 10px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .copy-icon { cursor: pointer; color: #60a5fa; font-size: 16px; transition: 0.2s; }
+        .copy-icon:hover { color: white; transform: scale(1.1); }
+
+        .timer-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
+        .timer-wrapper { position: relative; width: 180px; height: 180px; display: flex; align-items: center; justify-content: center; }
+        .timer-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+        .timer-circle-bg { fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 8; }
+        .timer-circle-progress { fill: none; stroke: var(--accent-sell); stroke-width: 8; stroke-linecap: round; stroke-dasharray: 440; stroke-dashoffset: 0; transition: stroke-dashoffset 1s linear; }
+        .timer-text { position: absolute; font-size: 32px; font-weight: 700; color: white; font-feature-settings: "tnum"; font-variant-numeric: tabular-nums; }
+        .timer-status { margin-top: 20px; font-size: 14px; color: var(--text-muted); text-align: center; }
+
+        /* === NOTIFICATIONS === */
+        #notification-area {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 9999; width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+        }
+        .notification {
+            padding: 16px; border-radius: 12px; color: white; font-weight: 500; font-size: 14px;
+            display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5); animation: notifSlideIn 0.3s ease-out; pointer-events: auto;
+        }
+        .notification.error { background-color: var(--error); }
+        .notification.success { background-color: var(--accent-buy); }
+        .notification-content { display: flex; align-items: center; gap: 12px; }
+        .notification-icon { font-size: 18px; }
+        
+        @keyframes notifSlideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2500; opacity: 0; pointer-events: none; transition: opacity 0.3s; border-radius: var(--radius); }
+        .overlay.active { opacity: 1; pointer-events: all; }
+        .show-menu { display: block !important; }
+        .rotate-arrow { transform: rotate(180deg); }
+    </style>
+</head>
+<body data-mode="buy">
+
+<div id="notification-area"></div>
+
+<div class="exchange-widget">
+    
+    <div class="app-header">EXCHANGE 24/7</div>
+
+    <div class="tabs-container">
+        <button class="tab-btn active" data-tab="buy">Купить</button>
+        <button class="tab-btn" data-tab="sell">Продать</button>
+    </div>
+
+    <div class="input-group" id="group-crypto">
+        <div class="label-row">
+            <span id="label-crypto">Покупаю (Получу)</span>
+        </div>
+        <div class="input-row">
+            <input type="number" class="amount-input" id="input-crypto" value="1" placeholder="0.0">
+            <div class="currency-selector">
+                <div class="currency-icon btc-bg" id="icon-crypto"><i class="fab fa-bitcoin"></i></div>
+                <span class="currency-code" id="code-crypto">BTC</span>
+                <i class="fas fa-chevron-down arrow-icon"></i>
+            </div>
+            <div class="dropdown-menu" id="list-crypto"></div>
+        </div>
+    </div>
+
+    <div class="input-group" id="group-network" style="margin-top: 10px; display: none;">
+        <div class="label-row">
+            <span>Выберите сеть</span>
+        </div>
+        <div class="input-row">
+            <div class="currency-selector" style="width: 100%;">
+                <div class="currency-icon" style="background: var(--accent-blue);"><i class="fas fa-network-wired"></i></div>
+                <span class="currency-code" id="code-network">TRC-20</span>
+                <i class="fas fa-chevron-down arrow-icon"></i>
+            </div>
+            <div class="dropdown-menu" id="list-network"></div>
+        </div>
+    </div>
+
+    <div class="middle-container">
+        
+        <div class="divider-icon">
+            <div class="divider-circle arrow-rotate-down" id="swap-mode-btn"><i class="fas fa-arrow-down"></i></div>
+        </div>
+
+        <div class="input-group" id="group-fiat">
+            <div class="label-row">
+                <span id="label-fiat">Оплачиваю (Спишется)</span>
+            </div>
+            <div class="input-row">
+                <input type="number" class="amount-input" id="input-fiat" placeholder="0.00">
+                <div class="currency-selector">
+                    <div class="currency-icon flag-icon" id="icon-fiat">🇺🇸</div>
+                    <span class="currency-code" id="code-fiat">USD</span>
+                    <i class="fas fa-chevron-down arrow-icon"></i>
+                </div>
+                 <div class="dropdown-menu" id="list-fiat"></div>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 5px;">
+            <span id="rate-display" style="font-size: 12px; color: #6b7280; font-weight: 500;">Загрузка...</span>
+        </div>
+
+        <div class="reserve-box" id="reserve-block">
+            <span id="reserve-text-value">Загрузка...</span>
+        </div>
+        
+        <div class="limit-error" id="limit-error">
+            <i class="fas fa-exclamation-circle"></i> Минимальная сумма: 1000$
+        </div>
+
+    </div>
+
+    <button class="exchange-btn" id="action-btn">Купить BTC</button>
+
+    <div class="overlay" id="overlay"></div>
+    <div class="modal-sheet" id="modal-sheet"></div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    // === CONFIG ===
+    const FIAT_RESERVE_BASE_USD = 780000;
+    const MIN_LIMIT_USD = 1000; 
+    const REVOLUT_BASE_URL = "https://revolut.me/qs7z";
+
+    const fallbackPrices = {
+        'bitcoin': 95000, 'ethereum': 3300, 'tron': 0.20,
+        'solana': 140, 'binancecoin': 600, 'ripple': 2.40, 'dogecoin': 0.15,
+        'litecoin': 85, 'monero': 160, 'waves': 2.50, 'stellar': 0.12
+    };
+
+    const cryptoAssets = {
+        'BTC': { id: 'bitcoin', name: 'Bitcoin', icon: 'fab fa-bitcoin', bg: 'btc-bg', reserve: '10.5', address: 'bc1qqudaure3hswp4n7m7v7ylt85ck4t2rvyudwnjf' },
+        'ETH': { id: 'ethereum', name: 'Ethereum', icon: 'fab fa-ethereum', bg: 'eth-bg', reserve: '120.0', address: '0xf9437FaC9D4eB1173256Decb3c68016eeE62b456' },
+        
+        // USDT с поддержкой множества сетей
+        'USDT': { 
+            id: 'tether', 
+            name: 'Tether', 
+            icon: 'fas fa-dollar-sign', 
+            bg: 'usdt-bg', 
+            reserve: '500000', 
+            networks: {
+                'TRC-20': 'TGMjfNzQrbubNMhWLC8xY7U5sjZ2cGGxXV',
+                'ERC-20': '0xf9437FaC9D4eB1173256Decb3c68016eeE62b456',
+                'BEP-20': '0xf9437FaC9D4eB1173256Decb3c68016eeE62b456',
+                'CRC-20': '0xf9437FaC9D4eB1173256Decb3c68016eeE62b456',
+                'ESDT': '0xf9437FaC9D4eB1173256Decb3c68016eeE62b456',
+                'KRC-20': '0xf9437FaC9D4eB1173256Decb3c68016eeE62b456',
+                'CW-20': 'terra17lp5chdswnrs3dnjy3hp4q7ccsp3hjvhl6ddgl',
+                'POLYGON': '0xf9437FaC9D4eB1173256Decb3c68016eeE62b456',
+                'JETTON': 'UQDZfNcwyLMYN7XG-eVD2EeMLjll1D2d9SsNd3nzjQecSRt4',
+                'SPL': 'BUhiW8HCPdWKi12pXPkpHv6xADz5F5TJ6ZFzvWscKux4',
+                'APTOS FA': '0x4dd641d4c7033b9ab1eb3ba4e8d0452270fbbae758359aeb69be943514583646',
+                'OPTIMISM': '0xf9437FaC9D4eB1173256Decb3c68016eeE62b456',
+                'ARBITRUM': '0xf9437FaC9D4eB1173256Decb3c68016eeE62b456',
+                'OPBNB': '0xf9437FaC9D4eB1173256Decb3c68016eeE62b456',
+                'BASE': '0xf9437FaC9D4eB1173256Decb3c68016eeE62b456',
+                'CELO': '0xf9437FaC9D4eB1173256Decb3c68016eeE62b456',
+                'SUI': '0x2ca23e3bf3b451c3a90236083491bb39c5977aa80bd0d878c2dd2b2475cee629',
+                'KAVAEVM': '0xf9437FaC9D4eB1173256Decb3c68016eeE62b456',
+                'MANTLE': '0xf9437FaC9D4eB1173256Decb3c68016eeE62b456',
+                'AVALANCHE': '0xf9437FaC9D4eB1173256Decb3c68016eeE62b456'
+            }
+        },
+        
+        'SOL': { id: 'solana', name: 'Solana', icon: 'fas fa-wind', bg: 'sol-bg', reserve: '4500.0', address: 'BUhiW8HCPdWKi12pXPkpHv6xADz5F5TJ6ZFzvWscKux4' },
+        'BNB': { id: 'binancecoin', name: 'Binance Coin', icon: 'fas fa-coins', bg: 'bnb-bg', reserve: '2000', address: '0xf9437FaC9D4eB1173256Decb3c68016eeE62b456' },
+        'XRP': { id: 'ripple', name: 'Ripple', icon: 'fas fa-university', bg: 'xrp-bg', reserve: '10000', address: 'rL72jPNFJeM96aNEFtEU98jahDEiK29Hcf' },
+        'DOGE': { id: 'dogecoin', name: 'Dogecoin', icon: 'fas fa-dog', bg: 'doge-bg', reserve: '500000', address: 'DKEuwx3fp3fWzsDPVYsiKcBNyp1E5zEVH6' },
+        'TRX': { id: 'tron', name: 'TRON', icon: 'fas fa-paper-plane', bg: 'trx-bg', reserve: '20000', address: 'TGMjfNzQrbubNMhWLC8xY7U5sjZ2cGGxXV' },
+        'LTC': { id: 'litecoin', name: 'Litecoin', icon: 'fas fa-coins', bg: 'ltc-bg', reserve: '500', address: 'ltc1qsht3u2xv29zh9nz6uqa4pz59cuzezsdmrhvusv' },
+        'WAVES': { id: 'waves', name: 'Waves', icon: 'fas fa-water', bg: 'waves-bg', reserve: '2000', address: '3P6mPwFDGznMqL8Si6d6YLqYqNLa9B6wtbx' },
+        'XLM': { id: 'stellar', name: 'Stellar', icon: 'fas fa-rocket', bg: 'xlm-bg', reserve: '50000', address: 'GBF3CYU7LASRL2VMOSHSE5N7PQ74ZSXQ354VYVCBQWUHR5WWVQQEH5CQ' }
+    };
+
+    const fiatAssets = [
+        { code: 'USD', name: 'Доллар США', flag: '🇺🇸' },
+        { code: 'EUR', name: 'Евро', flag: '🇪🇺' },
+        { code: 'GBP', name: 'Британский фунт', flag: '🇬🇧' },
+        { code: 'KZT', name: 'Казахстанский тенге', flag: '🇰🇿' },
+        { code: 'TRY', name: 'Турецкая лира', flag: '🇹🇷' },
+        { code: 'PLN', name: 'Польский злотый', flag: '🇵🇱' },
+        { code: 'JPY', name: 'Японская иена', flag: '🇯🇵' }
+    ];
+
+    let state = { mode: 'buy', crypto: 'BTC', network: '', fiat: 'usd', prices: { fiat: 0, usd: 0 }, lastEdited: 'crypto' };
+    let timerInterval = null;
+
+    $(document).ready(function() {
+        initLists(); fetchPrice();
+
+        $(document).on('click', '.tab-btn', function() { switchMode($(this).data('tab')); });
+
+        $('#swap-mode-btn').on('click', function() {
+            let newMode = state.mode === 'buy' ? 'sell' : 'buy';
+            switchMode(newMode);
+        });
+
+        $(document).on('click', '.currency-selector', function(e) { 
+            e.stopPropagation(); 
+            let $m = $(this).siblings('.dropdown-menu'); 
+            let $g = $(this).closest('.input-group'); 
+            if ($m.hasClass('show-menu')) { closeAllMenus(); return; } 
+            closeAllMenus(); 
+            $m.addClass('show-menu'); 
+            $(this).find('.arrow-icon').addClass('rotate-arrow'); 
+            $g.addClass('group-active'); 
+        });
+
+        $(document).on('click', '.dropdown-item', function(e) { 
+            e.stopPropagation(); 
+            let type = $(this).data('type'); 
+            let ticker = $(this).data('ticker'); 
+            if (type === 'crypto') {
+                state.crypto = ticker; 
+                state.network = '';
+            } else if (type === 'fiat') { 
+                state.fiat = ticker.toLowerCase(); 
+                let flag = $(this).data('flag'); 
+                $('#icon-fiat').text(flag);
+            } else if (type === 'network') {
+                state.network = ticker;
+                $('#code-network').text(ticker);
+            }
+            closeAllMenus(); 
+            updateUI(); 
+            fetchPrice(); 
+        });
+        
+        // Обработчик смены сети для USDT
+        $(document).on('change', '#network-selector', function() {
+            let net = $(this).val();
+            let addr = cryptoAssets['USDT'].networks[net];
+            $('#deposit-address').text(addr);
+            $('#copy-btn').attr('onclick', `window.copyAddress('${addr}')`);
+        });
+
+        $(document).on('click', function() { closeAllMenus(); });
+        $('#input-crypto').on('input', function() { state.lastEdited = 'crypto'; calculate(); });
+        $('#input-fiat').on('input', function() { state.lastEdited = 'fiat'; calculate(); });
+        
+        $('#action-btn').on('click', function() { openModal(); });
+        $(document).on('input', '.modal-input', function() { $(this).removeClass('input-error'); });
+        $(document).on('click', '.close-modal', closeModal);
+        $('#overlay').on('click', closeModal);
+    });
+
+    function initLists() {
+        let $cl = $('#list-crypto');
+        for (let k in cryptoAssets) { let c = cryptoAssets[k]; $cl.append(`<div class="dropdown-item" data-type="crypto" data-ticker="${k}"><div class="currency-icon ${c.bg}"><i class="${c.icon}"></i></div><span>${c.name}</span><small>${k}</small></div>`); }
+        
+        let $fl = $('#list-fiat');
+        fiatAssets.forEach(f => { 
+            $fl.append(`
+                <div class="dropdown-item" data-type="fiat" data-ticker="${f.code}" data-flag="${f.flag}">
+                    <div class="currency-icon flag-icon">${f.flag}</div>
+                    <span>${f.code}</span>
+                </div>
+            `); 
+        });
+        updateUI();
+    }
+
+    function switchMode(mode) {
+        state.mode = mode;
+        $('body').attr('data-mode', mode);
+        $('.tab-btn').removeClass('active'); $(`.tab-btn[data-tab="${mode}"]`).addClass('active');
+        $('#limit-error').hide(); $('#action-btn').prop('disabled', false); $('.input-group').removeClass('error-state');
+        updateUI();
+    }
+
+    function updateUI() {
+        let c = cryptoAssets[state.crypto];
+        $('#code-crypto').text(state.crypto); $('#icon-crypto').attr('class', `currency-icon ${c.bg}`); $('#icon-crypto i').attr('class', c.icon);
+        $('#code-fiat').text(state.fiat.toUpperCase());
+        
+        let arrow = $('#swap-mode-btn');
+        if (state.mode === 'buy') {
+            $('#label-crypto').text('Покупаю (Получу)'); $('#label-fiat').text('Оплачиваю (Спишется)');
+            $('#action-btn').text(`Купить ${state.crypto}`);
+            arrow.removeClass('arrow-rotate-up').addClass('arrow-rotate-down');
+        } else {
+            $('#label-crypto').text('Продаю (Отдам)'); $('#label-fiat').text('Получаю (На карту)');
+            $('#action-btn').text(`Продать ${state.crypto}`);
+            arrow.removeClass('arrow-rotate-down').addClass('arrow-rotate-up');
+        }
+
+        updateNetworkUI();
+        calcReserve();
+    }
+
+    function updateNetworkUI() {
+        let c = cryptoAssets[state.crypto];
+        let $group = $('#group-network');
+        let $list = $('#list-network');
+        
+        if (c.networks) {
+            $list.empty();
+            let networkKeys = Object.keys(c.networks);
+            if (!state.network || !c.networks[state.network]) {
+                state.network = networkKeys[0];
+            }
+            $('#code-network').text(state.network);
+            
+            networkKeys.forEach(net => {
+                $list.append(`<div class="dropdown-item" data-type="network" data-ticker="${net}"><span>${net}</span></div>`);
+            });
+            $group.show();
+        } else {
+            state.network = '';
+            $group.hide();
+        }
+    }
+
+    function closeAllMenus() { $('.dropdown-menu').removeClass('show-menu'); $('.arrow-icon').removeClass('rotate-arrow'); $('.input-group').removeClass('group-active'); }
+
+    function fetchPrice() {
+        let cid = cryptoAssets[state.crypto].id; $('#rate-display').css('opacity', '0.5');
+        $.ajax({
+            url: 'https://api.coingecko.com/api/v3/simple/price', data: { ids: cid, vs_currencies: `${state.fiat},usd` }, timeout: 1500,
+            success: function(res) { if (res[cid]) { state.prices.fiat = res[cid][state.fiat]; state.prices.usd = res[cid]['usd']; showRate(); } else { useFallbackPrice(cid); } },
+            error: function() { useFallbackPrice(cid); }
+        });
+    }
+    function useFallbackPrice(cid) { let usd = fallbackPrices[cid] || 0; state.prices.usd = usd; state.prices.fiat = usd; showRate(); }
+    function showRate() { let pr = state.prices.fiat.toLocaleString('ru-RU'); $('#rate-display').text(`1 ${state.crypto} ≈ ${pr} ${state.fiat.toUpperCase()}`); $('#rate-display').css('opacity', '1'); calcReserve(); calculate(); }
+    
+    function calcReserve() { 
+        if (state.mode === 'buy') {
+            let c = cryptoAssets[state.crypto];
+            $('#reserve-text-value').html(`<i class="fas fa-coins"></i> Запас: ${c.reserve} ${state.crypto}`);
+        } else {
+            if (state.prices.usd === 0) return; 
+            let rate = state.prices.fiat / state.prices.usd; 
+            let val = FIAT_RESERVE_BASE_USD * rate; 
+            $('#reserve-text-value').html(`<i class="fas fa-university"></i> Резерв банка: ${val.toLocaleString('ru-RU', {maximumFractionDigits:0})} ${state.fiat.toUpperCase()}`);
+        }
+    }
+
+    function calculate() { if (state.prices.fiat === 0) return; let cVal, fVal; if (state.lastEdited === 'crypto') { cVal = parseFloat($('#input-crypto').val()) || 0; fVal = (cVal * state.prices.fiat); $('#input-fiat').val(fVal.toFixed(2)); } else { fVal = parseFloat($('#input-fiat').val()) || 0; cVal = (fVal / state.prices.fiat); $('#input-crypto').val(parseFloat(cVal.toFixed(6))); } validateLimits(); }
+    
+    function validateLimits() {
+        if (!state.prices.usd || state.prices.usd === 0) return;
+        let cVal = parseFloat($('#input-crypto').val()) || 0; 
+        let totalUsd = cVal * state.prices.usd;
+        let minCrypto = MIN_LIMIT_USD / state.prices.usd;
+        let minCryptoStr = minCrypto.toFixed(6).replace(/\.?0+$/, ''); 
+        
+        let errorMsg = `<i class="fas fa-exclamation-circle"></i> Минимальная сумма: ${minCryptoStr} ${state.crypto}`;
+        let hasError = false;
+
+        if (totalUsd < MIN_LIMIT_USD) { hasError = true; } 
+        if (state.mode === 'sell' && totalUsd > FIAT_RESERVE_BASE_USD) {
+            hasError = true; errorMsg = `<i class="fas fa-exclamation-circle"></i> Сумма превышает резерв банка`;
+        }
+        if (state.mode === 'buy') {
+            let maxCrypto = parseFloat(cryptoAssets[state.crypto].reserve);
+            if (cVal > maxCrypto) { hasError = true; errorMsg = `<i class="fas fa-exclamation-circle"></i> Недостаточно резерва ${state.crypto}`; }
+        }
+
+        $('#limit-error').html(errorMsg);
+
+        if (hasError) {
+            $('#limit-error').slideDown(); $('#action-btn').prop('disabled', true);
+            if (state.mode === 'buy') { $('#group-fiat').addClass('error-state'); $('#group-crypto').removeClass('error-state'); } else { $('#group-crypto').addClass('error-state'); $('#group-fiat').removeClass('error-state'); }
+        } else { $('#limit-error').slideUp(); $('#action-btn').prop('disabled', false); $('.input-group').removeClass('error-state'); }
+    }
+
+    // === MODAL FUNCTIONS ===
+    function showNotification(msg, type = 'success') {
+        let icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
+        let $el = $(`<div class="notification ${type}"><div class="notification-content"><i class="fas ${icon} notification-icon"></i><span>${msg}</span></div></div>`);
+        $('#notification-area').append($el); setTimeout(() => { $el.slideUp(300, function(){ $(this).remove(); }); }, 3000);
+    }
+
+    function openModal() {
+        if ($('#action-btn').is(':disabled')) return; 
+
+        let contentHtml = '';
+        if (state.mode === 'buy') {
+            contentHtml = `
+                <div class="modal-header"><h3>Покупка ${state.crypto}</h3><div class="close-modal"><i class="fas fa-times"></i></div></div>
+                <label style="color:#aaa; font-size:12px; margin-bottom:5px; display:block;">Ваш адрес кошелька ${state.network ? 'сеть:' + state.network + '' : ''}</label>
+                <input type="text" class="modal-input" id="modal-wallet" placeholder="Вставьте адрес кошелька...">
+                <label style="color:#aaa; font-size:12px; margin-bottom:5px; display:block;">Способ оплаты</label>
+                <div class="payment-method" onclick="window.processPayment('card')">
+                    <div class="pm-icon" style="color: #1a1f36;"><i class="fab fa-cc-visa"></i></div>
+                    <div class="pm-info"><span class="pm-name">Карта Visa / MasterCard</span></div><i class="fas fa-chevron-right" style="margin-left: auto; color: #666;"></i>
+                </div>
+                <div class="payment-method" onclick="window.processPayment('revolut')">
+                    <div class="pm-icon" style="color: #0075eb;"><i class="fas fa-bolt"></i></div>
+                    <div class="pm-info"><span class="pm-name">Revolut Pay</span></div><i class="fas fa-chevron-right" style="margin-left: auto; color: #666;"></i>
+                </div>
+            `;
+        } else {
+            let cryptoAmount = $('#input-crypto').val();
+            let fiatAmount = $('#input-fiat').val();
+            let fiatCode = state.fiat.toUpperCase();
+            
+            let depositAddress = '';
+            let networkInfo = '';
+            
+            if (state.network && cryptoAssets[state.crypto].networks) {
+                depositAddress = cryptoAssets[state.crypto].networks[state.network];
+                networkInfo = `<div style="color:#aaa; font-size:12px; margin-bottom:5px;">Сеть: <strong>${state.network}</strong></div>`;
+            } else {
+                depositAddress = cryptoAssets[state.crypto].address || "Адрес не найден";
+            }
+            
+            contentHtml = `
+                <div class="modal-header"><h3>Продажа ${state.crypto}</h3><div class="close-modal"><i class="fas fa-times"></i></div></div>
+                <label style="color:#aaa; font-size:12px; margin-bottom:5px; display:block;">Ваш Revtag</label>
+                <input type="text" class="modal-input" id="modal-revtag" placeholder="@rev555" style="border-color:#3b82f6; margin-bottom: 10px;">
+                
+                <div style="background-color: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px; padding: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+                    <span style="color: #93c5fd; font-size: 14px; font-weight: 500;">Я получаю на Revolut:</span>
+                    <span style="font-size: 20px; font-weight: 700; color: white;">${fiatAmount} ${fiatCode}</span>
+                </div>
+
+                <div class="info-box-blue">
+                    <div class="info-header"><i class="fas fa-info-circle"></i> Заявка создана</div>
+                    
+                    <div class="amount-display-block">
+                        <div class="amount-label">Переведите эту сумму</div>
+                        <div class="amount-value">${cryptoAmount} ${state.crypto}</div>
+                    </div>
+                    
+                    ${networkInfo}
+
+                    <div style="font-size:12px; color:#dbeafe; margin-bottom:5px;">На этот адрес:</div>
+                    <div class="crypto-address-box">
+                        <span id="deposit-address">${depositAddress}</span>
+                        <i class="fas fa-copy copy-icon" id="copy-btn" onclick="window.copyAddress('${depositAddress}')"></i>
+                    </div>
+                </div>
+                <button class="exchange-btn" style="background: var(--accent-sell-blue); margin-top: auto;" onclick="window.startTimerLogic()">Подтвердить</button>
+            `;
+        }
+        $('#modal-sheet').html(contentHtml); $('#overlay').addClass('active'); $('#modal-sheet').addClass('open');
+    }
+
+    function closeModal() { $('#overlay').removeClass('active'); $('#modal-sheet').removeClass('open'); clearInterval(timerInterval); }
+
+    window.processPayment = function(m) {
+        let wallet = $('#modal-wallet').val();
+        if(!wallet) { 
+            $('#modal-wallet').addClass('input-error'); 
+            showNotification('Введите адрес кошелька', 'error');
+            return; 
+        }
+        let amt = parseFloat($('#input-fiat').val()); if(isNaN(amt)||amt<=0) return;
+        let c = Math.round(amt*100); let curr = state.fiat.toUpperCase();
+        window.location.href = `${REVOLUT_BASE_URL}?amount=${c}&currency=${curr}`;
+    };
+
+    window.copyAddress = function(text) { navigator.clipboard.writeText(text).then(() => showNotification('Адрес скопирован!', 'success')); };
+
+    window.startTimerLogic = function() {
+        let revtag = $('#modal-revtag').val();
+        if(!revtag) { 
+            $('#modal-revtag').addClass('input-error'); 
+            showNotification('Введите ваш Revtag', 'error');
+            return; 
+        }
+        
+        let timerHtml = `
+            <div class="modal-header"><h3>Ожидание средств</h3><div class="close-modal"><i class="fas fa-times"></i></div></div>
+            <div class="timer-container"><div class="timer-wrapper"><svg class="timer-svg" viewBox="0 0 160 160"><circle class="timer-circle-bg" cx="80" cy="80" r="70"></circle><circle id="timer-progress" class="timer-circle-progress" cx="80" cy="80" r="70"></circle></svg><div class="timer-text" id="timer-text">25:00</div></div><div class="timer-status">Проверяем транзакцию...<br>Не закрывайте окно.</div></div>
+        `;
+        $('#modal-sheet').html(timerHtml); runCountdown(25 * 60);
+    };
+
+    function runCountdown(duration) {
+        let timer = duration; const circumference = 440; clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            const circle = document.getElementById('timer-progress'); const text = document.getElementById('timer-text');
+            if(!circle) { clearInterval(timerInterval); return; }
+            let m = parseInt(timer / 60, 10); let s = parseInt(timer % 60, 10);
+            m = m < 10 ? "0" + m : m; s = s < 10 ? "0" + s : s; text.textContent = m + ":" + s;
+            let ratio = (timer % 60) / 60; let offset = circumference - (ratio * circumference);
+            circle.style.strokeDashoffset = offset;
+            if (--timer < 0) { clearInterval(timerInterval); closeModal(); }
+        }, 1000);
+    }
+</script>
+
+</body>
+</html>
