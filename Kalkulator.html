@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>Калькулятор времени — Theme Stile</title>
+  <style>
+    /* БАЗОВЫЕ СТИЛИ */
+    body { background-color: #1b222d; color: #e6edf3; font-family: "Inter", sans-serif; display: flex; flex-direction: column; align-items: center; padding-top: 40px; margin: 0; }
+    
+    /* СТИЛИ ВКЛАДОК ЯЗЫКОВ */
+    .language-tabs { display: flex; gap: 4px; margin-bottom: -1px; z-index: 1; width: 400px; padding-left: 10px; box-sizing: border-box; }
+    .lang-tab { 
+      padding: 8px 16px; 
+      background: #232a3b; 
+      border: 1px solid #343e50; 
+      border-bottom: none;
+      border-radius: 8px 8px 0 0; 
+      color: #8b949e; 
+      cursor: pointer; 
+      font-weight: 600; 
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    .lang-tab:hover { background: #2c354a; }
+    .lang-tab.active { background: #4e73df; color: #fff; border-color: #4e73df; }
+
+    /* КАЛЬКУЛЯТОР (Оригинал) */
+    .calculator { background-color: #232a3b; border-radius: 12px; padding: 30px; width: 400px; border: 1px solid #343e50; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); position: relative; z-index: 2; }
+    .time-field { width: 100%; box-sizing: border-box; padding: 14px; margin: 8px 0 18px; border: 1px solid #343e50; border-radius: 8px; background: transparent; color: #fff; font-size: 19px; cursor: pointer; text-align: left; }
+    .label { color: #8b949e; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* ПОДГОТОВКА */
+    .prep-card { border: 1px solid #343e50; border-radius: 8px; padding: 15px; margin-bottom: 20px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+    .radio-circle { width: 20px; height: 20px; border: 2px solid #8b949e; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .prep-card.active { border-color: #58a6ff; background: rgba(88, 166, 255, 0.05); }
+    .prep-card.active .radio-circle { border-color: #58a6ff; }
+    .radio-dot { width: 10px; height: 10px; background: #58a6ff; border-radius: 50%; display: none; }
+    .prep-card.active .radio-dot { display: block; }
+
+    /* КНОПКИ */
+    .btn-group { display: flex; gap: 10px; }
+    .btn { flex: 1; padding: 14px; border: none; border-radius: 8px; font-weight: 600; color: #fff; cursor: pointer; font-size: 17px; }
+    .btn-calc { background: #4e73df; }
+    .btn-info { background: #343e50; border: 1px solid #454f63; }
+
+    /* МОДАЛЬНЫЕ ОКНА */
+    .picker-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; z-index: 9999; backdrop-filter: blur(5px); align-items: flex-start; padding-top: 20px; }
+    .picker-container { background: #1b222d; width: 340px; border-radius: 20px; padding: 20px; border: 1px solid #343e50; }
+
+    /* БАРАБАН */
+    .picker-wheels { display: flex; justify-content: center; height: 200px; overflow: hidden; position: relative; gap: 5px; }
+    .wheel { flex: 1; height: 100%; overflow-y: scroll; scroll-snap-type: y mandatory; scrollbar-width: none; scroll-behavior: smooth; }
+    .wheel div { height: 40px; line-height: 40px; font-size: 24px; color: #8b949e; scroll-snap-align: center; opacity: 0.2; }
+    .wheel div.selected { color: #fff; opacity: 1; font-size: 29px; font-weight: bold; }
+    .wheel div.spacer { height: 80px; }
+    .picker-highlight { position: absolute; top: 80px; left: 0; width: 100%; height: 40px; background: rgba(255,255,255,0.07); border-radius: 8px; pointer-events: none; }
+
+    /* ИСТОРИЯ (РЕЗУЛЬТАТЫ) */
+    .history-card { background: #232a3b; border-radius: 12px; padding: 25px; margin-top: 25px; border: 1px solid #343e50; text-align: center; }
+    .chart-container { position: relative; width: 180px; height: 180px; margin: 0 auto 20px; }
+    .chart-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+    .chart-bg { fill: none; stroke: #343e50; stroke-width: 12; }
+    .chart-fill { fill: none; stroke-width: 12; stroke-linecap: round; transition: stroke-dashoffset 0.6s ease; }
+    .chart-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; }
+    .chart-percent { font-size: 46px; font-weight: bold; display: block; }
+    .chart-label { font-size: 14px; color: #8b949e; text-transform: uppercase; margin-top: 5px; display: block; }
+
+    /* УВЕДОМЛЕНИЯ */
+    .status-alert { padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 16px; font-weight: 500; text-align: left; border-left: 4px solid transparent; color: #ffffff !important; }
+    .alert-red { background: rgba(240, 103, 103, 0.25); border-left-color: #f06767; }
+    .alert-orange { background: rgba(255, 152, 0, 0.25); border-left-color: #ff9800; }
+    .alert-green { background: rgba(60, 212, 160, 0.25); border-left-color: #3cd4a0; }
+
+    .legend { display: flex; justify-content: center; gap: 15px; margin-bottom: 25px; font-size: 14px; color: #8b949e; }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+    .stat-list { text-align: left; border-top: 1px solid #343e50; padding-top: 15px; }
+    .stat-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 16px; }
+    .item-label { display: flex; align-items: center; gap: 10px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ИНСТРУКЦИЯ (Белый текст) */
+    .instr-white { color: #ffffff !important; font-size: 17px !important; }
+  </style>
+</head>
+<body>
+
+  <div class="language-tabs">
+    <div class="lang-tab" onclick="setLang('Eng')">Eng</div>
+    <div class="lang-tab" onclick="setLang('Pol')">Pol</div>
+    <div class="lang-tab" onclick="setLang('Esp')">Esp</div>
+    <div class="lang-tab" onclick="setLang('Ukr')">Ukr</div>
+    <div class="lang-tab active" onclick="setLang('Pyc')">Pyc</div>
+  </div>
+
+  <div class="calculator">
+    <label class="label" id="l_qty">Количество штук</label>
+    <input type="number" id="quantity" class="time-field" placeholder="0">
+
+    <label class="label" id="l_tpi">Время на 1 штуку</label>
+    <div id="timePerItem" class="time-field" onclick="openPicker('timePerItem')">00:00:30</div>
+
+    <div class="prep-card" id="prepToggle" onclick="togglePrep()">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div class="radio-circle"><div class="radio-dot" id="radioDot" style="display:none;"></div></div>
+        <span><b style="font-size: 19px;" id="l_prep">Подготовка</b><br><small style="color:#8b949e; font-size:14px;" id="l_prepSub">15 минут к норме</small></span>
+      </div>
+      <div id="statusLabel" class="status-text" style="font-size:14px; color:#8b949e; font-weight:bold;">НЕ АКТИВНО</div>
+    </div>
+
+    <label class="label" id="l_start">Начало</label>
+    <div id="startTime" class="time-field" onclick="openPicker('startTime', true)">08:00</div>
+
+    <label class="label" id="l_end">Окончание</label>
+    <div id="endTime" class="time-field" onclick="openPicker('endTime')">00:00:00</div>
+
+    <div class="btn-group">
+      <button class="btn btn-calc" id="b_calc" onclick="calculate()">Рассчитать</button>
+      <button class="btn btn-info" id="b_info" onclick="openInstruction()">Инструкция</button>
+    </div>
+    <div id="result"></div>
+  </div>
+
+  <div id="pickerOverlay" class="picker-overlay">
+    <div class="picker-container">
+      <div style="display:flex; justify-content:space-between; margin-bottom:15px; color:#fff; font-size:17px;">
+        <span onclick="closePicker()" id="p_cancel" style="color:#58a6ff; cursor:pointer;">Отмена</span>
+        <b id="p_title">Время</b>
+        <span onclick="confirmPicker()" id="p_done" style="color:#58a6ff; cursor:pointer;">Готово</span>
+      </div>
+      <div class="picker-wheels">
+        <div class="picker-highlight"></div>
+        <div class="wheel" id="hWheel"></div><div class="wheel" id="mWheel"></div><div class="wheel" id="sWheel"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="infoOverlay" class="picker-overlay">
+    <div class="picker-container" style="width:360px; max-height:85vh; overflow-y:auto;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:20px; position:sticky; top:0; background:#1b222d; padding-bottom:10px; z-index:10;">
+        <b style="font-size:22px; color:#fff;" id="i_title">Инструкция</b>
+        <span onclick="closeInstruction()" id="i_close" style="color:#58a6ff; cursor:pointer; font-weight:bold; font-size:17px;">Закрыть</span>
+      </div>
+      <div id="instructionContent">
+        </div>
+    </div>
+  </div>
+
+  <script>
+    let activeField = null, isPrepActive = false, shortFormat = false;
+    let currentLang = 'Pyc';
+
+    // СЛОВАРЬ ПЕРЕВОДОВ (Полная структура для всех языков)
+    const tr = {
+      'Pyc': {
+        labels: { qty:'Количество штук', tpi:'Время на 1 штуку', prep:'Подготовка', prepSub:'15 минут к норме', start:'Начало', end:'Окончание', active:'АКТИВНО', inactive:'НЕ АКТИВНО' },
+        btns: { calc:'Рассчитать', info:'Инструкция', cancel:'Отмена', done:'Готово', close:'Закрыть', pick:'Время' },
+        stats: { success:'Успеваемость', zone:'Вы сейчас находитесь в зоне:', plan:'План окончания:', norm:'Норма на всё:', spent1:'Затрачено на 1 шт:', spentNorm:'Время нормы затрачено:', fact:'Факт. окончание:' },
+        legend: ['Риск', 'Не плохо', 'Норма'],
+        zones: { risk: 'Красная зона риска', orange: 'Оранжевая зона', green: 'Зелёная зона', over: 'Красная зона' },
+        msgs: { fail: 'ВЫ НЕ СПРАВЛЯЕТЕСЬ!', push: 'ПОДНАЖМИТЕ!', good: 'Хороший темп ТАК ДЕРЖАТЬ!', over: 'ВЫ ПРЕВЫШАЕТЕ НОРМУ!' },
+        instr: [
+          {t: 'Как пользоваться', c: '1. Впишите количество штук.<br>2. Время с чертежа.<br>3. Активируйте "Подготовку".<br>4. Укажите время начала/конца.'},
+          {t: 'Как понимать цвета?', c: 'Цвет круга меняется: Красный — Вы не справляетесь с нормой, Оранжевый — Не плохо но лучше увеличить темп, Зеленый — Вы справляетесь с нормой. Если попали в красную зону, нужно исправить темп.'},
+          {t: 'Процентное соотношение зон', c: 'Ниже 65%: Красная зона (Риск).<br>65-75%: Оранжевый (не плохо но лучше поднажать).<br>75-100%: Зеленый (Норма).<br>Выше 100%: Красный (Перебор).'}
+        ]
+      },
+      'Eng': {
+        labels: { qty:'Quantity', tpi:'Time per item', prep:'Preparation', prepSub:'15 min to norm', start:'Start', end:'End', active:'ACTIVE', inactive:'INACTIVE' },
+        btns: { calc:'Calculate', info:'Instruction', cancel:'Cancel', done:'Done', close:'Close', pick:'Time' },
+        stats: { success:'Efficiency', zone:'You are currently in zone:', plan:'Planned end:', norm:'Total norm:', spent1:'Spent per item:', spentNorm:'Norm time spent:', fact:'Fact. end:' },
+        legend: ['Risk', 'Not bad', 'Normal'],
+        zones: { risk: 'Red Risk Zone', orange: 'Orange Zone', green: 'Green Zone', over: 'Red Zone' },
+        msgs: { fail: 'YOU ARE FAILING!', push: 'PUSH HARDER!', good: 'Good pace KEEP IT UP!', over: 'YOU ARE OVER THE LIMIT!' },
+        instr: [
+          {t: 'How to use', c: '1. Enter quantity.<br>2. Time from drawing.<br>3. Activate "Preparation".<br>4. Set start/end time.'},
+          {t: 'Colors meaning', c: 'Circle color changes: Red — You are failing, Orange — Not bad but speed up, Green — You are doing well. Correct your pace if Red.'},
+          {t: 'Zone percentages', c: 'Below 65%: Red (Risk).<br>65-75%: Orange (Speed up).<br>75-100%: Green (Norm).<br>Above 100%: Red (Over).'}
+        ]
+      },
+      'Pol': {
+        labels: { qty:'Ilość sztuk', tpi:'Czas na 1 sztukę', prep:'Przygotowanie', prepSub:'15 min do normy', start:'Początek', end:'Koniec', active:'AKTYWNE', inactive:'NIEAKTYWNE' },
+        btns: { calc:'Oblicz', info:'Instrukcja', cancel:'Anuluj', done:'Gotowe', close:'Zamknij', pick:'Czas' },
+        stats: { success:'Wydajność', zone:'Jesteś teraz w strefie:', plan:'Planowany koniec:', norm:'Norma całkowita:', spent1:'Czas na 1 szt:', spentNorm:'Zużyty czas normy:', fact:'Fakt. koniec:' },
+        legend: ['Ryzyko', 'Nieźle', 'Norma'],
+        zones: { risk: 'Czerwona strefa ryzyka', orange: 'Pomarańczowa strefa', green: 'Zielona strefa', over: 'Czerwona strefa' },
+        msgs: { fail: 'NIE DAJESZ RADY!', push: 'PRZYCIŚNIJ!', good: 'Dobre tempo TAK TRZYMAĆ!', over: 'PRZEKRACZASZ NORMĘ!' },
+        instr: [
+          {t: 'Jak używać', c: '1. Wpisz ilość.<br>2. Czas z rysunku.<br>3. Aktywuj "Przygotowanie".<br>4. Ustaw czas startu/końca.'},
+          {t: 'Znaczenie kolorów', c: 'Kolor koła zmienia się: Czerwony — Nie wyrabiasz się, Pomarańczowy — Nieźle ale przyspiesz, Zielony — Wyrabiasz się.'},
+          {t: 'Procenty stref', c: 'Poniżej 65%: Czerwony (Ryzyko).<br>65-75%: Pomarańczowy.<br>75-100%: Zielony (Norma).<br>Powyżej 100%: Czerwony (Nadmiar).'}
+        ]
+      },
+      'Esp': {
+        labels: { qty:'Cantidad', tpi:'Tiempo por pieza', prep:'Preparación', prepSub:'15 min a la norma', start:'Inicio', end:'Fin', active:'ACTIVO', inactive:'INACTIVO' },
+        btns: { calc:'Calcular', info:'Instrucción', cancel:'Cancelar', done:'Hecho', close:'Cerrar', pick:'Tiempo' },
+        stats: { success:'Eficiencia', zone:'Estás en la zona:', plan:'Fin previsto:', norm:'Norma total:', spent1:'Gasto por 1 pza:', spentNorm:'Tiempo norma gastado:', fact:'Fin real:' },
+        legend: ['Riesgo', 'Regular', 'Normal'],
+        zones: { risk: 'Zona Roja de Riesgo', orange: 'Zona Naranja', green: 'Zona Verde', over: 'Zona Roja' },
+        msgs: { fail: '¡NO ESTÁS CUMPLIENDO!', push: '¡APRIETA EL PASO!', good: 'Buen ritmo ¡SIGUE ASÍ!', over: '¡EXCEDES LA NORMA!' },
+        instr: [
+          {t: 'Cómo usar', c: '1. Ingrese cantidad.<br>2. Tiempo del dibujo.<br>3. Active "Preparación".<br>4. Indique hora de inicio/fin.'},
+          {t: 'Significado de colores', c: 'El color cambia: Rojo — No cumples, Naranja — Acelera, Verde — Vas bien. Si es rojo, corrige el ritmo.'},
+          {t: 'Porcentaje de zonas', c: 'Menos de 65%: Rojo (Riesgo).<br>65-75%: Naranja (Acelerar).<br>75-100%: Verde (Norma).<br>Más de 100%: Rojo (Exceso).'}
+        ]
+      },
+      'Ukr': {
+        labels: { qty:'Кількість штук', tpi:'Час на 1 штуку', prep:'Підготовка', prepSub:'15 хвилин до норми', start:'Початок', end:'Закінчення', active:'АКТИВНО', inactive:'НЕ АКТИВНО' },
+        btns: { calc:'Розрахувати', info:'Інструкція', cancel:'Відміна', done:'Готово', close:'Закрити', pick:'Час' },
+        stats: { success:'Успішність', zone:'Ви зараз в зоні:', plan:'План закінчення:', norm:'Норма на все:', spent1:'Витрачено на 1 шт:', spentNorm:'Час норми витрачено:', fact:'Факт. закінчення:' },
+        legend: ['Ризик', 'Не погано', 'Норма'],
+        zones: { risk: 'Червона зона ризику', orange: 'Помаранчева зона', green: 'Зелена зона', over: 'Червона зона' },
+        msgs: { fail: 'ВИ НЕ СПРАВЛЯЄТЕСЬ!', push: 'ПІДНАТИСНІТЬ!', good: 'Хороший темп ТАК ТРИМАТИ!', over: 'ВИ ПЕРЕВИЩУЄТЕ НОРМУ!' },
+        instr: [
+          {t: 'Як користуватися', c: '1. Впишіть кількість штук.<br>2. Час з креслення.<br>3. Активуйте "Підготовку".<br>4. Вкажіть час.'},
+          {t: 'Як розуміти кольори?', c: 'Червоний — не справляєтесь, Помаранчевий — треба прискоритись, Зелений — ви в нормі.'},
+          {t: 'Відсоткове співвідношення зон', c: 'Нижче 65%: Червона (Ризик).<br>65-75%: Помаранчева (Прискоритись).<br>75-100%: Зелена (Норма).<br>Вище 100%: Червона (Перебір).'}
+        ]
+      }
+    };
+
+    // ФУНКЦИЯ СМЕНЫ ЯЗЫКА
+    function setLang(lang) {
+      currentLang = lang;
+      const t = tr[lang] || tr['Pyc'];
+      
+      // Табы
+      document.querySelectorAll('.lang-tab').forEach(el => el.classList.toggle('active', el.textContent === lang));
+
+      // Лейблы и кнопки
+      document.getElementById('l_qty').textContent = t.labels.qty;
+      document.getElementById('l_tpi').textContent = t.labels.tpi;
+      document.getElementById('l_prep').textContent = t.labels.prep;
+      document.getElementById('l_prepSub').textContent = t.labels.prepSub;
+      document.getElementById('l_start').textContent = t.labels.start;
+      document.getElementById('l_end').textContent = t.labels.end;
+      document.getElementById('b_calc').textContent = t.btns.calc;
+      document.getElementById('b_info').textContent = t.btns.info;
+      document.getElementById('p_cancel').textContent = t.btns.cancel;
+      document.getElementById('p_done').textContent = t.btns.done;
+      document.getElementById('p_title').textContent = t.btns.pick;
+      document.getElementById('i_title').textContent = t.btns.info;
+      document.getElementById('i_close').textContent = t.btns.close;
+      
+      // Статус подготовки
+      updatePrepStatus();
+
+      // Генерация инструкции (структура из оригинала)
+      let html = '';
+      t.instr.forEach(item => {
+        html += `
+        <div style="background:#232a3b; border-radius:8px; margin-bottom:8px; border:1px solid #343e50;">
+          <div style="padding:16px; display:flex; justify-content:space-between; cursor:pointer; color:#58a6ff; font-size:17px;" onclick="toggleAccordion(this)">${item.t} <span>▼</span></div>
+          <div class="instr-white" style="padding:0 16px 16px; display:none;">${item.c}</div>
+        </div>`;
+      });
+      document.getElementById('instructionContent').innerHTML = html;
+
+      // Пересчет, если уже есть результат
+      if(document.getElementById('result').innerHTML !== "") calculate();
+    }
+
+    function initWheel(id, max) {
+      const w = document.getElementById(id); w.innerHTML = '<div class="spacer"></div>';
+      for (let i=0; i<=max; i++) { let d = document.createElement('div'); d.textContent = String(i).padStart(2,'0'); w.appendChild(d); }
+      w.innerHTML += '<div class="spacer"></div>';
+      w.onscroll = () => { let idx = Math.round(w.scrollTop/40); w.querySelectorAll('div:not(.spacer)').forEach((item, i) => item.classList.toggle('selected', i === idx)); };
+    }
+    initWheel('hWheel', 23); initWheel('mWheel', 59); initWheel('sWheel', 59);
+
+    function openPicker(id, isShort=false) { activeField = id; shortFormat = isShort; document.getElementById('sWheel').style.display = isShort ? 'none' : 'block'; document.getElementById('pickerOverlay').style.display = 'flex'; }
+    function closePicker() { document.getElementById('pickerOverlay').style.display = 'none'; }
+    function confirmPicker() {
+      const h = document.querySelector('#hWheel .selected')?.textContent || "00", m = document.querySelector('#mWheel .selected')?.textContent || "00", s = document.querySelector('#sWheel .selected')?.textContent || "00";
+      document.getElementById(activeField).textContent = shortFormat ? `${h}:${m}` : `${h}:${m}:${s}`; closePicker();
+    }
+
+    function openInstruction() { document.getElementById('infoOverlay').style.display = 'flex'; }
+    function closeInstruction() { document.getElementById('infoOverlay').style.display = 'none'; }
+    function toggleAccordion(el) { let c = el.nextElementSibling; c.style.display = (c.style.display === 'none' ? 'block' : 'none'); }
+
+    function togglePrep() {
+      isPrepActive = !isPrepActive; 
+      updatePrepStatus();
+    }
+
+    function updatePrepStatus() {
+      const t = tr[currentLang] || tr['Pyc'];
+      document.getElementById('radioDot').style.display = isPrepActive ? 'block' : 'none';
+      document.getElementById('prepToggle').classList.toggle('active', isPrepActive);
+      document.getElementById('statusLabel').textContent = isPrepActive ? t.labels.active : t.labels.inactive;
+      document.getElementById('statusLabel').style.color = isPrepActive ? '#3cd4a0' : '#8b949e';
+    }
+
+    function parseToSec(str) { let p = str.split(':').map(Number); return p.length === 3 ? p[0]*3600 + p[1]*60 + p[2] : p[0]*3600 + p[1]*60; }
+    function formatTime(s) { let h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = Math.round(s%60); return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
+
+    function calculate() {
+      const q = parseFloat(document.getElementById('quantity').value) || 0; if (!q) return;
+      const t = tr[currentLang] || tr['Pyc'];
+      const tpi = parseToSec(document.getElementById('timePerItem').textContent), prep = isPrepActive ? 900 : 0, norm = (q * tpi) + prep;
+      const start = parseToSec(document.getElementById('startTime').textContent), plan = formatTime((start + norm) % 86400), endStr = document.getElementById('endTime').textContent;
+      let eff = 0, spent = "--:--:--", spentPer = "--:--:--";
+      if (endStr !== "00:00:00") { let FactS = parseToSec(endStr), FactT = FactS >= start ? FactS - start : (86400 - start) + FactS; eff = Math.round((norm / FactT) * 100); spent = formatTime(FactT); spentPer = formatTime((FactT - prep) / q); }
+
+      // ЛОГИКА ОРИГИНАЛА
+      let clr = "#8b949e", zn = "---", msg = "", alrt = "";
+      if (eff > 0) {
+        if (eff < 65) { clr="#f06767"; zn=t.zones.risk; msg=t.msgs.fail; alrt="alert-red"; }
+        else if (eff < 75) { clr="#ff9800"; zn=t.zones.orange; msg=t.msgs.push; alrt="alert-orange"; }
+        else if (eff <= 100) { clr="#3cd4a0"; zn=t.zones.green; msg=t.msgs.good; alrt="alert-green"; }
+        else { clr="#f06767"; zn=t.zones.over; msg=t.msgs.over; alrt="alert-red"; }
+      }
+
+      const off = 440 - (440 * Math.min(eff, 100)) / 100;
+      
+      // СТРУКТУРА HTML ОРИГИНАЛА (ВОССТАНОВЛЕНА)
+      document.getElementById('result').innerHTML = `
+        <div class="history-card">
+          <div class="chart-container">
+            <svg class="chart-svg" viewBox="0 0 160 160"><circle class="chart-bg" cx="80" cy="80" r="70" /><circle class="chart-fill" cx="80" cy="80" r="70" style="stroke:${clr}; stroke-dasharray:440; stroke-dashoffset:${off};" /></svg>
+            <div class="chart-text"><span class="chart-percent" style="color:${clr}">${eff}%</span><span class="chart-label">${t.stats.success}</span></div>
+          </div>
+          
+          <div class="status-alert ${alrt}">${t.stats.zone} <b>${zn}</b><br>${msg}</div>
+          
+          <div class="legend">
+            <div class="legend-item"><div class="legend-dot" style="background:#f06767"></div>${t.legend[0]}</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#ff9800"></div>${t.legend[1]}</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#3cd4a0"></div>${t.legend[2]}</div>
+          </div>
+          
+          <div class="stat-list">
+            <div class="stat-item"><div class="item-label"><div class="dot" style="background:#3cd4a0"></div>${t.stats.plan}</div><b>${plan}</b></div>
+            <div class="stat-item"><div class="item-label"><div class="dot" style="background:#f06767"></div>${t.stats.norm}</div><b>${formatTime(norm)}</b></div>
+            <div class="stat-item"><div class="item-label"><div class="dot" style="background:#00bcd4"></div>${t.stats.spent1}</div><b>${spentPer}</b></div>
+            <div class="stat-item"><div class="item-label"><div class="dot" style="background:#4e73df"></div>${t.stats.spentNorm}</div><b>${spent}</b></div>
+            <div class="stat-item"><div class="item-label"><div class="dot" style="background:#ff9800"></div>${t.stats.fact}</div><b>${endStr}</b></div>
+          </div>
+        </div>`;
+    }
+
+    // Старт
+    setLang('Pyc');
+  </script>
+</body>
+</html>
