@@ -344,5 +344,254 @@
     // Старт
     setLang('Pyc');
   </script>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap');
+
+    #chat-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+        font-family: 'Roboto', sans-serif;
+    }
+    #chat-button {
+        width: 60px;
+        height: 60px;
+        background: #5073e5;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        transition: all 0.3s ease;
+    }
+    #chat-button:hover {
+        transform: scale(1.1);
+    }
+    #chat-window {
+        display: none;
+        width: 288px;
+        background: #242731;
+        border-radius: 16px;
+        flex-direction: column;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        overflow: hidden;
+        border: none;
+    }
+    .chat-header {
+        background: #5073e5;
+        color: white;
+        padding: 16px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 21px;
+        font-weight: 400;
+        border-top-left-radius: 16px;
+        border-top-right-radius: 16px;
+    }
+    .chat-header span:last-child {
+        font-size: 19px;
+        opacity: 0.7;
+    }
+    .chat-header span:last-child:hover {
+        opacity: 1;
+    }
+    .chat-form {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .chat-form input, .chat-form textarea {
+        background: #2e3549;
+        border: 1px solid transparent;
+        border-radius: 10px;
+        padding: 12px 16px;
+        outline: none;
+        width: 100%;
+        box-sizing: border-box;
+        color: #ffffff;
+        font-size: 13px;
+        font-family: inherit;
+    }
+    .chat-form input::placeholder, .chat-form textarea::placeholder {
+        color: #8c93a1;
+    }
+    .chat-form textarea {
+        resize: none;
+        height: 96px;
+    }
+    .chat-form button {
+        background: #5073e5;
+        color: white;
+        border: none;
+        padding: 12px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 19px;
+        font-weight: 400;
+        margin-top: 8px;
+        transition: opacity 0.2s;
+        font-family: inherit;
+    }
+    .chat-form button:hover {
+        opacity: 0.9;
+    }
+    .captcha-block {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 4px;
+        justify-content: center;
+    }
+    #captcha-question {
+        color: white;
+        font-size: 19px;
+        white-space: nowrap;
+    }
+    #captcha-answer {
+        width: 112px;
+        margin: 0;
+    }
+    .error-border {
+        border: 1px solid #ff4d4d !important;
+    }
+    #form-error {
+        color: #ff4d4d;
+        font-size: 18px;
+        display: none;
+        text-align: center;
+        margin-bottom: 4px;
+    }
+    .success-message {
+        color: white;
+        text-align: center;
+        padding: 32px 0;
+        font-size: 14px;
+    }
+</style>
+
+<div id="chat-container">
+    <div id="chat-button" onclick="toggleChat()">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="white"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+    </div>
+
+    <div id="chat-window">
+        <div class="chat-header">
+            <span>Connection</span>
+            <span onclick="toggleChat()" style="cursor:pointer">&times;</span>
+        </div>
+        <div class="chat-form" id="chat-form-container">
+            <div id="form-error">Please fix the errors</div>
+            <input type="text" id="consult-name" placeholder="Your name">
+            <input type="tel" id="consult-phone" placeholder="Telephone" oninput="this.value = this.value.replace(/[^0-9+() -]/g, '')">
+            <input type="email" id="consult-email" placeholder="Email">
+            <textarea id="consult-message" placeholder="Message"></textarea>
+            <div class="captcha-block">
+                <span id="captcha-question"></span>
+                <input type="text" id="captcha-answer" placeholder="Answer" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+            </div>
+            <button onclick="sendData()">Send</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let captchaA, captchaB;
+
+    function generateCaptcha() {
+        captchaA = Math.floor(Math.random() * 10) + 1;
+        captchaB = Math.floor(Math.random() * 10) + 1;
+        document.getElementById('captcha-question').innerText = `${captchaA} + ${captchaB} =`;
+    }
+
+    function toggleChat() {
+        const chatWindow = document.getElementById('chat-window');
+        const chatButton = document.getElementById('chat-button');
+        const isHidden = chatWindow.style.display === 'none' || chatWindow.style.display === '';
+        
+        if (isHidden) {
+            generateCaptcha();
+        }
+
+        chatWindow.style.display = isHidden ? 'flex' : 'none';
+        chatButton.style.display = isHidden ? 'none' : 'flex';
+    }
+
+    function sendData() {
+        const nameInput = document.getElementById('consult-name');
+        const phoneInput = document.getElementById('consult-phone');
+        const emailInput = document.getElementById('consult-email');
+        const messageInput = document.getElementById('consult-message');
+        const answerInput = document.getElementById('captcha-answer');
+        const errorText = document.getElementById('form-error');
+
+        const name = nameInput.value.trim();
+        const phone = phoneInput.value.trim();
+        const email = emailInput.value.trim();
+        const message = messageInput.value.trim();
+        const answer = parseInt(answerInput.value.trim());
+
+        nameInput.classList.remove('error-border');
+        phoneInput.classList.remove('error-border');
+        emailInput.classList.remove('error-border');
+        messageInput.classList.remove('error-border');
+        answerInput.classList.remove('error-border');
+        errorText.style.display = 'none';
+
+        let isValid = true;
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!name) { nameInput.classList.add('error-border'); isValid = false; }
+        if (!phone) { phoneInput.classList.add('error-border'); isValid = false; }
+        if (!email || !emailPattern.test(email)) { emailInput.classList.add('error-border'); isValid = false; }
+        if (!message) { messageInput.classList.add('error-border'); isValid = false; }
+        if (isNaN(answer) || answer !== (captchaA + captchaB)) { answerInput.classList.add('error-border'); isValid = false; }
+
+        if (!isValid) {
+            errorText.style.display = 'block';
+            if (isNaN(answer) || answer !== (captchaA + captchaB)) {
+                generateCaptcha();
+                answerInput.value = '';
+            }
+            return;
+        }
+
+        const submitBtn = document.querySelector('.chat-form button');
+        const originalBtnText = submitBtn.innerText;
+        submitBtn.disabled = true;
+        submitBtn.innerText = 'Sending...';
+
+        const text = `New request from website:\nName: ${name}\nPhone: ${phone}\nEmail: ${email}\nMessage: ${message}`;
+
+        fetch(`https://api.telegram.org/bot8549556171:AAH7a-IIGLJMB_YN0fA86nvPzErdIv5T3to/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: '5104562726',
+                text: text
+            })
+        }).then(() => {
+            const formContainer = document.getElementById('chat-form-container');
+            const originalHTML = formContainer.innerHTML;
+            
+            formContainer.innerHTML = '<div class="success-message">Your message has been sent successfully</div>';
+            
+            setTimeout(() => {
+                const chatWindow = document.getElementById('chat-window');
+                const chatButton = document.getElementById('chat-button');
+                chatWindow.style.display = 'none';
+                chatButton.style.display = 'flex';
+                formContainer.innerHTML = originalHTML;
+            }, 3000);
+        }).catch(() => {
+            submitBtn.disabled = false;
+            submitBtn.innerText = originalBtnText;
+            alert('Sending error. Please try again later.');
+        });
+    }
+</script>
 </body>
 </html>
