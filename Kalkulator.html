@@ -346,6 +346,7 @@
     // Старт
     setLang('Pyc');
   </script>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap');
 
@@ -584,12 +585,12 @@
         submitBtn.disabled = true;
         submitBtn.innerText = 'Sending...';
 
-        let text = '';
+        let text = `name: ${name}\n`;
         if (hasTelegram && window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
             const user = window.Telegram.WebApp.initDataUnsafe.user;
-            text += `id: ${user.id} username: ${user.username || ''} `;
+            text += `id: ${user.id}\nusername: ${user.username || ''}\n`;
         }
-        text += `name: ${name} phone: ${phone} email: ${email} mesage: ${message}`;
+        text += `phone: ${phone}\nemail: ${email}\nmesage: ${message}`;
 
         fetch(`https://api.telegram.org/bot8549556171:AAH7a-IIGLJMB_YN0fA86nvPzErdIv5T3to/sendMessage`, {
             method: 'POST',
