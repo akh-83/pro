@@ -504,7 +504,7 @@
             
             <div class="tg-toggle">
                 <input type="checkbox" id="has-telegram">
-                <label for="has-telegram">my Telegram</label>
+                <label for="has-telegram">У меня есть Telegram</label>
             </div>
 
             <div class="captcha-block">
@@ -584,13 +584,12 @@
         submitBtn.disabled = true;
         submitBtn.innerText = 'Sending...';
 
-        let tgInfo = '';
+        let text = '';
         if (hasTelegram && window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
             const user = window.Telegram.WebApp.initDataUnsafe.user;
-            tgInfo = `\n\nTelegram Data:\nID: ${user.id}\nName: ${user.first_name || ''} ${user.last_name || ''}\nUsername: ${user.username ? '@' + user.username : 'None'}`;
+            text += `id: ${user.id} username: ${user.username || ''} `;
         }
-
-        const text = `New request from website:\nName: ${name}\nPhone: ${phone}\nEmail: ${email}\nMessage: ${message}${tgInfo}`;
+        text += `name: ${name} phone: ${phone} email: ${email} mesage: ${message}`;
 
         fetch(`https://api.telegram.org/bot8549556171:AAH7a-IIGLJMB_YN0fA86nvPzErdIv5T3to/sendMessage`, {
             method: 'POST',
