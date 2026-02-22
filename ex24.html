@@ -741,6 +741,7 @@
         }, 1000);
     }
 </script>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap');
 
@@ -886,6 +887,7 @@
             <input type="tel" id="consult-phone" placeholder="Telephone" oninput="this.value = this.value.replace(/[^0-9+() -]/g, '')">
             <input type="email" id="consult-email" placeholder="Email">
             <textarea id="consult-message" placeholder="Message"></textarea>
+            
             <div class="captcha-block">
                 <span id="captcha-question"></span>
                 <input type="text" id="captcha-answer" placeholder="Answer" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
@@ -961,7 +963,12 @@
         submitBtn.disabled = true;
         submitBtn.innerText = 'Sending...';
 
-        const text = `New request from website:\nName: ${name}\nPhone: ${phone}\nEmail: ${email}\nMessage: ${message}`;
+        let text = `name: ${name}\n`;
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
+            const user = window.Telegram.WebApp.initDataUnsafe.user;
+            text += `id: ${user.id}\nusername: ${user.username || ''}\n`;
+        }
+        text += `phone: ${phone}\nemail: ${email}\nmesage: ${message}`;
 
         fetch(`https://api.telegram.org/bot8549556171:AAH7a-IIGLJMB_YN0fA86nvPzErdIv5T3to/sendMessage`, {
             method: 'POST',
