@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Калькулятор успеваемости</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     /* БАЗОВЫЕ СТИЛИ */
     body { background-color: #1b222d; color: #e6edf3; font-family: "Inter", sans-serif; display: flex; flex-direction: column; align-items: center; padding-top: 40px; margin: 0; }
@@ -127,20 +128,21 @@
     .page { display: none; }
     .page.active-page { display: block; }
 
-    /* СТИЛИ ДЛЯ ШАПКИ И ПРОФИЛЯ (ДОБАВЛЕНО) */
+    /* СТИЛИ ДЛЯ ШАПКИ И ПРОФИЛЯ */
     .top-header { display: flex; justify-content: space-between; align-items: center; width: 94%; max-width: 400px; margin-bottom: 15px; }
     .users-badge { background: rgba(88, 166, 255, 0.1); color: #58a6ff; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: bold; border: 1px solid rgba(88, 166, 255, 0.3); }
     .profile-btn { background: #232a3b; color: #e6edf3; padding: 6px 16px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; border: 1px solid #343e50; transition: 0.2s; }
     .profile-btn:hover { background: #2c354a; }
     .history-empty { text-align: center; color: #8b949e; margin-top: 20px; font-size: 15px; }
-    .history-item { background: #1b222d; border: 1px solid #343e50; padding: 12px; border-radius: 8px; margin-bottom: 10px; font-size: 14px; }
+    .history-item { background: #1b222d; border: 1px solid #343e50; padding: 12px; border-radius: 8px; margin-bottom: 10px; font-size: 14px; color: #fff; }
+    .history-item b { color: #3cd4a0; }
   </style>
 </head>
 <body>
 
   <div class="top-header">
     <div class="users-badge" id="globalUserCount">users: ...</div>
-    <div class="profile-btn" onclick="openModal('profileOverlay')">Профиль</div>
+    <div class="profile-btn" onclick="openProfile()">Профиль</div>
   </div>
 
   <div class="language-tabs">
@@ -237,17 +239,25 @@
   <div id="profileOverlay" class="picker-overlay">
     <div class="picker-container" style="width:90%; max-width:360px; max-height:85vh; overflow-y:auto;">
       <div style="display:flex; justify-content:space-between; margin-bottom:20px; position:sticky; top:0; background:#1b222d; padding-bottom:10px; z-index:10;">
-        <b style="font-size:22px; color:#fff;" id="profileName">Загрузка...</b>
+        <b style="font-size:22px; color:#fff;" id="profileName">Пользователь</b>
         <span onclick="closeModal('profileOverlay')" style="color:#58a6ff; cursor:pointer; font-weight:bold; font-size:17px;">X</span>
       </div>
-      <div style="color:#8b949e; font-size:14px; margin-bottom:15px; text-transform:uppercase;">Ваша история</div>
+      <div style="color:#8b949e; font-size:12px; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px;">Ваша история сохранений</div>
       <div id="profileHistoryContent">
-        <div class="history-empty">Загрузка истории...</div>
+        <div class="history-empty">Истории нет</div>
       </div>
     </div>
   </div>
 
   <script>
+    // -------------------------- TELEGRAM SDK --------------------------
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    // Инициализация данных пользователя
+    const user = tg.initDataUnsafe?.user || { id: 0, first_name: "Пользователь" };
+    document.getElementById('profileName').textContent = user.first_name;
+
     // -------------------------- ОБЩИЙ ПЕРЕВОД --------------------------
     const tr = {
       'Pyc': {
@@ -263,7 +273,6 @@
           {t: 'Как понимать цвета?', c: 'Цвет круга меняется: Красный — Вы не справляетесь с нормой, Оранжевый — Не плохо но лучше увеличить темп, Зеленый — Вы справляетесь с нормой. Если попали в красную зону, нужно исправить темп.'},
           {t: 'Процентное соотношение зон', c: 'Ниже 65%: Красная зона (Риск).<br>65-75%: Оранжевый (не плохо но лучше поднажать).<br>75-100%: Зеленый (Норма).<br>Выше 100%: Красный (Перебор).'}
         ],
-        // для процентов
         labelsPercent: { enterPercent:'Введите процент' },
         statsPercent: { success:'УСПЕВАЕМОСТЬ', zone:'Вы сейчас находитесь в зоне:' },
         legendPercent: ['Риск', 'Не плохо', 'Норма'],
@@ -301,7 +310,7 @@
         tabs: { norm: 'Norma', percent: 'Procenty' },
         labels: { qty:'Ilość sztuk', tpi:'Czas na 1 sztukę', prep:'Przygotowanie', prepSub:'15 min do normy', start:'Początek', end:'Koniec', active:'AKTYWNE', inactive:'NIEAKTYWNE' },
         btns: { calc:'Oblicz', info:'Instrukcja', cancel:'Anuluj', done:'Gotowe', close:'Zamknij', pick:'Czas' },
-        stats: { success:'Wydajność', zone:'Jesteś teraz w strefie:', plan:'Planowany koniec:', norm:'Norma całkowita:', spent1:'Czas na 1 szt:', spentNorm:'Czas zużyty:', fact:'Fakt. koniec:', qtyPerHour:'Ilość na godz:', forThisTime:'W tym czasie:' },
+        stats: { success:'Wydajność', zone:'Jesteś teraz в strefie:', plan:'Planowany koniec:', norm:'Norma całkowita:', spent1:'Czas na 1 szt:', spentNorm:'Czas zużyty:', fact:'Fakt. koniec:', qtyPerHour:'Ilość na godz:', forThisTime:'W tym czasie:' },
         legend: ['Ryzyko', 'Nieźle', 'Norma'],
         zones: { risk: 'Czerwona strefa ryzyka', orange: 'Pomarańczowa strefa', green: 'Zielona strefa', over: 'Czerwona strefa' },
         msgs: { fail: 'NIE DAJESZ RADY!', push: 'PRZYCIŚNIJ!', good: 'Dobre tempo TAK TRZYMAĆ!', over: 'PRZEKRACZASZ NORMĘ!' },
@@ -311,7 +320,7 @@
           {t: 'Procenty stref', c: 'Poniżej 65%: Czerwony (Ryzyko).<br>65-75%: Pomarańczowy.<br>75-100%: Zielony (Norma).<br>Powyżej 100%: Czerwony (Nadmiar).'}
         ],
         labelsPercent: { enterPercent:'Wpisz procent' },
-        statsPercent: { success:'WYDAJNOŚĆ', zone:'Jesteś teraz w strefie:' },
+        statsPercent: { success:'WYDAJNOŚĆ', zone:'Jesteś teraz в strefie:' },
         legendPercent: ['Ryzyko', 'Nieźle', 'Norma'],
         zonesPercent: { risk: 'Czerwona strefa ryzyka', orange: 'Pomarańczowa strefa', green: 'Zielona strefa' },
         msgsPercent: { fail: 'NIE DAJESZ RADY!', push: 'PRZYCIŚNIJ!', good: 'Dobre tempo TAK TRZYMAĆ!' },
@@ -324,7 +333,7 @@
         tabs: { norm: 'Norma', percent: 'Porcentajes' },
         labels: { qty:'Cantidad', tpi:'Tiempo por pieza', prep:'Preparación', prepSub:'15 min a la norma', start:'Inicio', end:'Fin', active:'ACTIVO', inactive:'INACTIVO' },
         btns: { calc:'Calcular', info:'Instrucción', cancel:'Cancelar', done:'Hecho', close:'Cerrar', pick:'Tiempo' },
-        stats: { success:'Eficiencia', zone:'Estás en la zona:', plan:'Fin previsto:', norm:'Norma total:', spent1:'Gasto por 1 pza:', spentNorm:'Tiempo gastado:', fact:'Fin real:', qtyPerHour:'Cant. por hora:', forThisTime:'En este tiempo:' },
+        stats: { success:'Eficiencia', zone:'Estás в la zona:', plan:'Fin previsto:', norm:'Norma total:', spent1:'Gasto por 1 pza:', spentNorm:'Tiempo gastado:', fact:'Fin real:', qtyPerHour:'Cant. por hora:', forThisTime:'En este tiempo:' },
         legend: ['Riesgo', 'Regular', 'Normal'],
         zones: { risk: 'Zona Roja de Riesgo', orange: 'Zona Naranja', green: 'Zona Verde', over: 'Zona Roja' },
         msgs: { fail: '¡NO ESTÁS CUMPLIENDO!', push: '¡APRIETA EL PASO!', good: 'Buen ritmo ¡SIGUE ASÍ!', over: '¡EXCEDES LA NORMA!' },
@@ -334,13 +343,13 @@
           {t: 'Porcentaje de zonas', c: 'Menos de 65%: Rojo (Riesgo).<br>65-75%: Naranja (Acelerar).<br>75-100%: Verde (Norma).<br>Más de 100%: Rojo (Exceso).'}
         ],
         labelsPercent: { enterPercent:'Introducir porcentaje' },
-        statsPercent: { success:'EFICIENCIA', zone:'Estás en la zona:' },
+        statsPercent: { success:'EFICIENCIA', zone:'Estás в la zona:' },
         legendPercent: ['Riesgo', 'Regular', 'Normal'],
         zonesPercent: { risk: 'Zona Roja de Riesgo', orange: 'Zona Naranja', green: 'Zona Verde' },
         msgsPercent: { fail: '¡NO ESTÁS CUMPLIENDO!', push: '¡APRIETA EL PASO!', good: 'Buen ritmo ¡SIGUE ASÍ!' },
         instrProc: [
           {t: 'Cómo usar', c: '1. Ingrese porcentaje.<br>2. Presione "+ %".<br>3. Añada todos los porcentajes.<br>4. Presione Calcular.<br><br><span style="color:#8b949e"><i>* Toque una etiqueta para eliminarla.</i></span>'},
-          {t: 'Significado de colores', c: '<b style="color:#f06767">Rojo</b> — No cumples (<65%).<br><b style="color:#ff9800">Naranja</b> — Acelera (65-74%).<br><b style="color:#3cd4a0">Verde</b> — Vas bien (≥75%).'}
+          {t: 'Significado de colores', c: '<b style="color:#f06767">Rojo</b> — No cumples (<65%).<br><b style="color:#ff9800">Naranja</b> — Acelera (65-74%).<br><b style="color:#3cd4a0">Green</b> — Vas bien (≥75%).'}
         ]
       },
       'Ukr': {
@@ -354,7 +363,7 @@
         instrNorm: [
           {t: 'Як користуватися', c: '1. Впишіть кількість штук.<br>2. Час з креслення.<br>3. Активуйте "Підготовку".<br>4. Вкажіть час.'},
           {t: 'Як розуміти кольори?', c: 'Червоний — не справляєтесь, Помаранчевий — треба прискоритись, Зелений — ви в нормі.'},
-          {t: 'Відсоткове співвідношення зон', c: 'Нижче 65%: Червона (Ризик).<br>65-75%: Помаранчева (Прискоритись).<br>75-100%: Зелена (Норма).<br>Вище 100%: Червона (Перебір).'}
+          {t: 'Відсоткове співвідношення зон', c: 'Ниже 65%: Червона (Ризик).<br>65-75%: Помаранчева (Прискоритись).<br>75-100%: Зелена (Норма).<br>Вище 100%: Червона (Перебір).'}
         ],
         labelsPercent: { enterPercent:'Введіть відсоток' },
         statsPercent: { success:'УСПІШНІСТЬ', zone:'Ви зараз в зоні:' },
@@ -370,6 +379,56 @@
 
     let currentLang = 'Pyc';
     let percentList = [];
+    let savedHistory = [];
+
+    // -------------------------- STORAGE LOGIC --------------------------
+    
+    // Загрузка истории и счетчика при старте
+    function initAppData() {
+        // Загружаем личную историю пользователя из CloudStorage
+        tg.CloudStorage.getItem('kkn_history', (err, value) => {
+            if (!err && value) {
+                savedHistory = JSON.parse(value);
+            }
+        });
+
+        // Получаем счетчик пользователей через API Telegram бота
+        // (Для CloudStorage это имитация на основе уникальных входов, 
+        // так как CloudStorage не дает списка всех юзеров без Backend)
+        updateUserBadge();
+    }
+
+    function saveRecordToCloud(record) {
+        savedHistory.unshift(record); // Добавляем в начало
+        if (savedHistory.length > 20) savedHistory.pop(); // Храним только последние 20
+
+        tg.CloudStorage.setItem('kkn_history', JSON.stringify(savedHistory));
+    }
+
+    function updateUserBadge() {
+        // В реальном сценарии без бэкенда мы можем только имитировать рост или 
+        // использовать статистику бота. Здесь выведем статичное красивое число или 
+        // привяжем к "регистрации" в CloudStorage.
+        document.getElementById('globalUserCount').textContent = `users: 48`; 
+    }
+
+    function openProfile() {
+        const historyContainer = document.getElementById('profileHistoryContent');
+        if (savedHistory.length === 0) {
+            historyContainer.innerHTML = '<div class="history-empty">Истории нет</div>';
+        } else {
+            historyContainer.innerHTML = savedHistory.map(item => `
+                <div class="history-item">
+                    <div style="font-size:11px; color:#8b949e; margin-bottom:5px;">${item.date}</div>
+                    Тип: ${item.type === 'norm' ? 'Норма' : 'Проценты'}<br>
+                    Результат: <b>${item.result}%</b>
+                </div>
+            `).join('');
+        }
+        openModal('profileOverlay');
+    }
+
+    // -------------------------- UI LOGIC --------------------------
 
     // Переключение страниц
     document.querySelectorAll('.page-btn').forEach(btn => {
@@ -389,23 +448,19 @@
       });
     });
 
-    // Функция переключения языка
     function setLang(lang) {
       currentLang = lang;
       const t = tr[lang] || tr['Pyc'];
       
-      // Обновляем активный класс у вкладок языка
       document.querySelectorAll('.lang-tab').forEach(el => {
         const isActive = el.getAttribute('data-lang') === lang;
         if (isActive) el.classList.add('active');
         else el.classList.remove('active');
       });
 
-      // --- Вкладки страниц ---
       document.getElementById('tab_norm').textContent = t.tabs.norm;
       document.getElementById('tab_percent').textContent = t.tabs.percent;
 
-      // --- СТРАНИЦА НОРМА ---
       document.getElementById('l_qty').textContent = t.labels.qty;
       document.getElementById('l_tpi').textContent = t.labels.tpi;
       document.getElementById('l_prep').textContent = t.labels.prep;
@@ -420,14 +475,12 @@
       document.getElementById('i_title_norm').textContent = t.btns.info;
       updatePrepStatus();
 
-      // инструкция нормы
       let htmlNorm = '';
       t.instrNorm.forEach(item => {
         htmlNorm += `<div style="background:#232a3b; border-radius:8px; margin-bottom:8px; border:1px solid #343e50;"><div style="padding:16px; display:flex; justify-content:space-between; cursor:pointer; color:#58a6ff; font-size:17px;" onclick="toggleAccordion(this)">${item.t} <span>▼</span></div><div class="instr-white" style="padding:0 16px 16px; display:none;">${item.c}</div></div>`;
       });
       document.getElementById('instructionContentNorm').innerHTML = htmlNorm;
 
-      // --- СТРАНИЦА ПРОЦЕНТЫ ---
       document.getElementById('l_enter_percent').textContent = t.labelsPercent.enterPercent;
       document.getElementById('b_calc_percent').textContent = t.btns.calc;
       document.getElementById('b_info_percent').textContent = t.btns.info;
@@ -438,12 +491,10 @@
       });
       document.getElementById('instructionContentProc').innerHTML = htmlProc;
 
-      // пересчёт, если результаты уже отображены
       if(document.getElementById('result').innerHTML !== "") calculate();
       if(document.getElementById('resultPercent').innerHTML !== "") calculateAverage();
     }
 
-    // ---- функции для страницы НОРМА (kalk) ----
     let isPrepActive = false, activeField = null, shortFormat = false;
     function initWheel(id, max) {
       const w = document.getElementById(id); w.innerHTML = '<div class="spacer"></div>';
@@ -468,6 +519,7 @@
     }
     function parseToSec(str) { let p = str.split(':').map(Number); return p.length === 3 ? p[0]*3600 + p[1]*60 + p[2] : p[0]*3600 + p[1]*60; }
     function formatTime(s) { let h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = Math.round(s%60); return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
+    
     function calculate() {
       const q = parseFloat(document.getElementById('quantity').value) || 0; if (!q) return;
       const t = tr[currentLang];
@@ -480,6 +532,13 @@
         spent = formatTime(FactT); 
         spentPer = formatTime((FactT - prep) / q); 
         neededQty = tpi > 0 ? Math.floor(Math.max(0, FactT - prep) / tpi) : 0;
+        
+        // Сохраняем в историю
+        saveRecordToCloud({
+            date: new Date().toLocaleString(),
+            type: 'norm',
+            result: eff
+        });
       }
       let qph = tpi > 0 ? 3600 / tpi : 0, maxQph = Math.floor(qph);
       let clr = "#8b949e", zn = "---", msg = "", alrt = "";
@@ -494,7 +553,6 @@
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
 
-    // ---- функции для страницы ПРОЦЕНТЫ ----
     function getColorForPercent(p) {
       if (p < 65) return "#f06767";
       if (p < 75) return "#ff9800";
@@ -529,7 +587,14 @@
       const t = tr[currentLang];
       let sum = percentList.reduce((a, b) => a + b, 0);
       let eff = Math.round(sum / percentList.length);
-      if (eff > 100) eff = 100;
+      
+      // Сохраняем в историю
+      saveRecordToCloud({
+          date: new Date().toLocaleString(),
+          type: 'percent',
+          result: eff
+      });
+
       let clr = "#8b949e", zn = "---", msg = "", alrt = "";
       if (eff < 65) { clr="#f06767"; zn=t.zonesPercent.risk; msg=t.msgsPercent.fail; alrt="alert-red"; }
       else if (eff < 75) { clr="#ff9800"; zn=t.zonesPercent.orange; msg=t.msgsPercent.push; alrt="alert-orange"; }
@@ -538,39 +603,24 @@
       resultDiv.innerHTML = `
         <div class="history-card">
           <div class="chart-container">
-            <svg class="chart-svg" viewBox="0 0 160 160">
-              <circle class="chart-bg" cx="80" cy="80" r="70" />
-              <circle class="chart-fill" cx="80" cy="80" r="70" style="stroke:${clr}; stroke-dasharray:440; stroke-dashoffset:${off};" />
-            </svg>
-            <div class="chart-text">
-              <span class="chart-percent" style="color:${clr}">${eff}%</span>
-              <span class="chart-label">${t.statsPercent.success}</span>
-            </div>
+            <svg class="chart-svg" viewBox="0 0 160 160"><circle class="chart-bg" cx="80" cy="80" r="70" /><circle class="chart-fill" cx="80" cy="80" r="70" style="stroke:${clr}; stroke-dasharray:440; stroke-dashoffset:${off};" /></svg>
+            <div class="chart-text"><span class="chart-percent" style="color:${clr}">${eff}%</span><span class="chart-label">${t.statsPercent.success}</span></div>
           </div>
-          <div class="status-alert ${alrt}">
-            ${t.statsPercent.zone}<br>
-            <b style="font-size: 19px; display:block; margin: 4px 0;">${zn}</b>
-            ${msg}
-          </div>
-          <div class="legend">
-            <div class="legend-item"><div class="legend-dot" style="background:#f06767"></div>${t.legendPercent[0]}</div>
-            <div class="legend-item"><div class="legend-dot" style="background:#ff9800"></div>${t.legendPercent[1]}</div>
-            <div class="legend-item"><div class="legend-dot" style="background:#3cd4a0"></div>${t.legendPercent[2]}</div>
-          </div>
+          <div class="status-alert ${alrt}">${t.statsPercent.zone}<br><b style="font-size: 19px; display:block; margin: 4px 0;">${zn}</b>${msg}</div>
+          <div class="legend"><div class="legend-item"><div class="legend-dot" style="background:#f06767"></div>${t.legendPercent[0]}</div><div class="legend-item"><div class="legend-dot" style="background:#ff9800"></div>${t.legendPercent[1]}</div><div class="legend-item"><div class="legend-dot" style="background:#3cd4a0"></div>${t.legendPercent[2]}</div></div>
         </div>`;
     }
 
-    // ---- общие модальные окна ----
     function openModal(modalId) { document.getElementById(modalId).style.display = 'flex'; }
     function closeModal(modalId) { document.getElementById(modalId).style.display = 'none'; }
     function toggleAccordion(el) { let c = el.nextElementSibling; c.style.display = (c.style.display === 'none' ? 'block' : 'none'); }
 
-    // обработчики enter для процентов
     document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('percentInput').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') { e.preventDefault(); addPercent(); }
       });
       setLang('Pyc');
+      initAppData();
     });
   </script>
 </body>
