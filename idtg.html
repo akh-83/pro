@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Мой Telegram ID</title>
+    <!-- Подключение Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .container {
+            max-width: 400px;
+            width: 100%;
+            background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+            border-radius: 28px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+
+        .description {
+            margin-bottom: 32px;
+            opacity: 0.8;
+            font-size: 0.95rem;
+        }
+
+        button {
+            background: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            border-radius: 12px;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+            width: 100%;
+            margin-top: 12px;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            transform: none;
+            cursor: not-allowed;
+        }
+
+        .info-card {
+            background: var(--tg-theme-bg-color, #ffffff);
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 24px;
+            text-align: left;
+            border: 1px solid var(--tg-theme-hint-color, rgba(0,0,0,0.1));
+            word-break: break-word;
+        }
+
+        .info-row {
+            margin-bottom: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+        }
+
+        .info-label {
+            font-weight: 600;
+            width: 90px;
+            color: var(--tg-theme-hint-color, #666);
+        }
+
+        .info-value {
+            flex: 1;
+            font-family: monospace;
+            font-size: 1rem;
+        }
+
+        .copy-button {
+            margin-top: 16px;
+            background: var(--tg-theme-button-color, #2481cc);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--tg-theme-button-color, #2481cc);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: var(--tg-theme-bg-color, #1c1c1e);
+            }
+            .container {
+                background: var(--tg-theme-secondary-bg-color, #2c2c2e);
+            }
+            .info-card {
+                border-color: var(--tg-theme-hint-color, rgba(255,255,255,0.1));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Мой Telegram ID</h1>
+        <div class="description">
+            Нажмите кнопку, чтобы увидеть ваш ID, имя пользователя и скопировать ID.
+        </div>
+        <button id="showIdBtn">📋 Показать свой ID</button>
+        <div id="infoPanel" class="info-card hidden">
+            <!-- Здесь будут отображаться данные -->
+        </div>
+    </div>
+
+    <div id="toast" class="toast">✅ ID скопирован!</div>
+
+    <script>
+        // Инициализация Telegram WebApp
+        const tg = window.Telegram?.WebApp;
+        if (tg) {
+            tg.expand(); // разворачиваем на весь экран
+            tg.ready();  // сообщаем, что приложение готово
+            // Можно установить цвет фона в соответствии с темой (опционально)
+            document.body.style.backgroundColor = tg.themeParams.bg_color;
+        }
+
+        // Получаем данные пользователя из Telegram (если они есть)
+        let userData = null;
+        if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            userData = tg.initDataUnsafe.user;
+        } else {
+            // Если запущено вне Telegram, можно показать заглушку или запросить вручную
+            console.warn("Запущено не в Telegram WebApp или пользователь не авторизован");
+        }
+
+        // Элементы DOM
+        const showBtn = document.getElementById('showIdBtn');
+        const infoPanel = document.getElementById('infoPanel');
+        const toast = document.getElementById('toast');
+
+        // Функция показа уведомления
+        function showToast(message) {
+            toast.textContent = message || '✅ ID скопирован!';
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        // Функция копирования текста в буфер обмена
+        async function copyToClipboard(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                showToast('✅ ID скопирован: ' + text);
+                // Дополнительно можно вызвать метод Telegram для вибрации (если поддерживается)
+                if (tg && tg.HapticFeedback) {
+                    tg.HapticFeedback.impactOccurred('light');
+                }
+            } catch (err) {
+                console.error('Ошибка копирования:', err);
+                showToast('❌ Не удалось скопировать');
+            }
+        }
+
+        // Отображаем информацию о пользователе
+        function showUserInfo() {
+            if (!userData) {
+                // Если данных нет, показываем ошибку или просим открыть через Telegram
+                infoPanel.innerHTML = `
+                    <div style="text-align:center; color: var(--tg-theme-hint-color);">
+                        ⚠️ Не удалось получить данные пользователя.<br>
+                        Убедитесь, что вы открыли это приложение через Telegram.
+                    </div>
+                `;
+                infoPanel.classList.remove('hidden');
+                return;
+            }
+
+            const userId = userData.id;
+            const username = userData.username ? '@' + userData.username : 'не указан';
+            const firstName = userData.first_name || '';
+            const lastName = userData.last_name || '';
+            const fullName = [firstName, lastName].filter(Boolean).join(' ') || 'не указано';
+
+            // Формируем HTML с данными
+            infoPanel.innerHTML = `
+                <div class="info-row">
+                    <span class="info-label">🆔 ID:</span>
+                    <span class="info-value">${userId}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">👤 Имя:</span>
+                    <span class="info-value">${escapeHtml(fullName)}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">🔗 Username:</span>
+                    <span class="info-value">${escapeHtml(username)}</span>
+                </div>
+                <button id="copyIdBtn" class="copy-button">📋 Копировать ID</button>
+            `;
+
+            infoPanel.classList.remove('hidden');
+
+            // Добавляем обработчик для кнопки копирования
+            const copyBtn = document.getElementById('copyIdBtn');
+            if (copyBtn) {
+                copyBtn.addEventListener('click', () => {
+                    copyToClipboard(userId.toString());
+                });
+            }
+        }
+
+        // Простейшая защита от XSS (экранирование)
+        function escapeHtml(str) {
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+                return c;
+            });
+        }
+
+        // Обработчик кнопки "Показать свой ID"
+        showBtn.addEventListener('click', () => {
+            // Если панель уже видна, можно обновить или просто показать
+            if (infoPanel.classList.contains('hidden')) {
+                showUserInfo();
+                // Можно добавить лёгкую вибрацию (если поддерживается)
+                if (tg && tg.HapticFeedback) {
+                    tg.HapticFeedback.impactOccurred('medium');
+                }
+            } else {
+                // Если уже показано, можно просто прокрутить или обновить
+                infoPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (tg && tg.HapticFeedback) {
+                    tg.HapticFeedback.impactOccurred('light');
+                }
+            }
+        });
+
+        // Если данные пользователя уже доступны при загрузке, можно показать кнопку,
+        // но не показывать данные автоматически. По желанию можно заменить текст кнопки.
+        // Здесь оставляем по требованию: только по нажатию.
+    </script>
+</body>
+</html>
