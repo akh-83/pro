@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SkrawMet App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+        :root { 
+            --bg-dark: #1a1d29; 
+            --bg-card: #222635; 
+            --accent-blue: #5b7ded; 
+            --accent-green: #3cd4a0; 
+            --accent-red: #f06767;
+            --accent-orange: #ff9800;
+            --text-main: #ffffff; 
+            --text-muted: #8b949e; 
+            --border-color: #343e50;
+        }
+        
+        body { margin: 0; padding: 0; background-color: var(--bg-dark); color: var(--text-main); font-family: 'Roboto', -apple-system, sans-serif; -webkit-font-smoothing: antialiased; padding-bottom: 80px; overflow-x: hidden; }
+        
+        /* СИСТЕМНЫЙ ЭКРАН */
+        #loading-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; width: 100vw; position: fixed; top: 0; left: 0; z-index: 9999; background-color: var(--bg-dark); }
+        .spinner { width: 40px; height: 40px; border: 4px solid var(--border-color); border-top: 4px solid var(--accent-blue); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        #app { display: none; }
+        
+        /* ВЕРХНИЙ БАР */
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: var(--bg-dark); position: sticky; top: 0; z-index: 10; border-bottom: 1px solid var(--border-color); }
+        .username { font-size: 18px; font-weight: 700; margin: 0;}
+        .users-badge { background-color: var(--bg-card); padding: 6px 12px; border-radius: 20px; font-size: 12px; border: 1px solid var(--border-color); }
+        
+        /* ВКЛАДКИ НАВИГАЦИИ */
+        .tab-content { display: none; padding: 20px; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* НИЖНЕЕ МЕНЮ */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background-color: var(--bg-card); display: flex; justify-content: space-around; padding: 10px 0 calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border-color); z-index: 100; }
+        .nav-item { color: var(--text-muted); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 50px; height: 50px; transition: color 0.3s; }
+        .nav-item svg { width: 24px; height: 24px; fill: currentColor; transition: transform 0.2s; }
+        .nav-item.active { color: var(--accent-blue); }
+        .nav-item.active svg { transform: scale(1.1); }
+        .nav-item.btn-plus { color: var(--accent-green); }
+        .nav-item.btn-plus svg { width: 36px; height: 36px; }
+        
+        /* --- ИНТЕГРАЦИЯ ДИЗАЙНА КАЛЬКУЛЯТОРА --- */
+        .language-tabs { display: flex; gap: 5px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
+        .lang-tab { padding: 8px 16px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-muted); cursor: pointer; font-weight: 600; font-size: 13px; white-space: nowrap; transition: 0.2s; }
+        .lang-tab.active { background: var(--accent-blue); color: #fff; border-color: var(--accent-blue); }
+
+        .calc-card { background-color: var(--bg-card); border-radius: 12px; padding: 20px; border: 1px solid var(--border-color); margin-bottom: 20px; }
+        .time-field { width: 100%; box-sizing: border-box; padding: 14px; margin: 8px 0 18px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-dark); color: #fff; font-size: 19px; cursor: pointer; outline: none; }
+        .label { color: var(--text-muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .prep-card { border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; margin-bottom: 20px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; background: var(--bg-dark); }
+        .radio-circle { width: 20px; height: 20px; border: 2px solid var(--text-muted); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .prep-card.active { border-color: var(--accent-blue); background: rgba(91, 125, 237, 0.05); }
+        .prep-card.active .radio-circle { border-color: var(--accent-blue); }
+        .radio-dot { width: 10px; height: 10px; background: var(--accent-blue); border-radius: 50%; display: none; }
+        .prep-card.active .radio-dot { display: block; }
+
+        .btn-group { display: flex; gap: 10px; }
+        .btn { flex: 1; padding: 14px; border: none; border-radius: 8px; font-weight: 600; color: #fff; cursor: pointer; font-size: 16px; transition: 0.2s; }
+        .btn:active { transform: scale(0.97); }
+        .btn-calc { background: var(--accent-blue); }
+        .btn-info { background: var(--bg-dark); border: 1px solid var(--border-color); }
+        .btn-save { background: var(--accent-green); width: 100%; margin-top: 15px; }
+
+        /* ОВЕРЛЕИ И РУЛЕТКИ */
+        .picker-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; z-index: 9999; backdrop-filter: blur(5px); align-items: flex-start; padding-top: 20px; }
+        .picker-container { background: var(--bg-card); width: 90%; max-width: 340px; border-radius: 20px; padding: 20px; border: 1px solid var(--border-color); box-sizing: border-box; }
+        .picker-wheels { display: flex; justify-content: center; height: 200px; overflow: hidden; position: relative; gap: 5px; }
+        .wheel { flex: 1; height: 100%; overflow-y: scroll; scroll-snap-type: y mandatory; scrollbar-width: none; scroll-behavior: smooth; }
+        .wheel div { height: 40px; line-height: 40px; font-size: 24px; color: var(--text-muted); scroll-snap-align: center; opacity: 0.3; text-align: center; }
+        .wheel div.selected { color: #fff; opacity: 1; font-size: 29px; font-weight: bold; }
+        .wheel div.spacer { height: 80px; }
+        .picker-highlight { position: absolute; top: 80px; left: 0; width: 100%; height: 40px; background: rgba(255,255,255,0.07); border-radius: 8px; pointer-events: none; }
+
+        /* РЕЗУЛЬТАТЫ И ГРАФИК */
+        .history-card { background: var(--bg-card); border-radius: 12px; padding: 20px; margin-top: 20px; border: 1px solid var(--border-color); text-align: center; box-sizing: border-box; width: 100%; }
+        .chart-container { position: relative; width: 160px; height: 160px; margin: 0 auto 20px; }
+        .chart-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+        .chart-bg { fill: none; stroke: var(--bg-dark); stroke-width: 12; }
+        .chart-fill { fill: none; stroke-width: 12; stroke-linecap: round; transition: stroke-dashoffset 0.6s ease; }
+        .chart-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; }
+        .chart-percent { font-size: 40px; font-weight: bold; display: block; }
+        .chart-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-top: 5px; display: block; }
+
+        .status-alert { padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 15px; text-align: left; border-left: 4px solid transparent; color: #fff; }
+        .alert-red { background: rgba(240, 103, 103, 0.15); border-left-color: var(--accent-red); }
+        .alert-orange { background: rgba(255, 152, 0, 0.15); border-left-color: var(--accent-orange); }
+        .alert-green { background: rgba(60, 212, 160, 0.15); border-left-color: var(--accent-green); }
+
+        .legend { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; font-size: 13px; color: var(--text-muted); flex-wrap: wrap; }
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+        .stat-list { text-align: left; border-top: 1px solid var(--border-color); padding-top: 15px; }
+        .stat-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 15px; }
+        .item-label { display: flex; align-items: center; gap: 8px; color: var(--text-muted); }
+        .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+        /* --- СТИЛИ ЧАТА --- */
+        #chat-container { position: fixed; bottom: 85px; right: 20px; z-index: 1000; }
+        #chat-button { width: 56px; height: 56px; background: var(--accent-blue); border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: 0.3s; }
+        #chat-window { display: none; width: 280px; background: var(--bg-card); border-radius: 16px; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--border-color); }
+        .chat-header { background: var(--accent-blue); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-radius: 16px 16px 0 0; font-weight: 500; }
+        .chat-form { padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .chat-form input, .chat-form textarea { background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; color: #fff; outline: none; }
+        .chat-form textarea { resize: none; height: 80px; }
+        .chat-form button { background: var(--accent-blue); color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 5px; }
+        .captcha-block { display: flex; align-items: center; gap: 10px; justify-content: center; color: #fff; }
+        #captcha-answer { width: 80px; }
+        .error-border { border-color: var(--accent-red) !important; }
+        #form-error { color: var(--accent-red); font-size: 13px; display: none; text-align: center; }
+        .success-message { color: var(--accent-green); text-align: center; padding: 20px 0; }
+    </style>
+</head>
+<body>
+
+    <!-- СИСТЕМНЫЙ ЭКРАН ЗАГРУЗКИ -->
+    <div id="loading-screen">
+        <div class="loader spinner"></div>
+        <div id="status" style="color: var(--text-muted);">Синхронизация...</div>
+    </div>
+
+    <!-- ОСНОВНОЕ ПРИЛОЖЕНИЕ -->
+    <div id="app">
+        <!-- ВЕРХНИЙ БАР -->
+        <header class="top-bar">
+            <h1 class="username" id="ui-username">User</h1>
+            <div class="users-badge">База: <span id="ui-users">0</span></div>
+        </header>
+
+        <!-- ВКЛАДКА: ГЛАВНАЯ -->
+        <section id="tab-home" class="tab-content">
+            <h2 style="text-align: center; margin-top: 0;">Главная</h2>
+            <div class="calc-card" style="text-align: center; color: var(--text-muted);">
+                Здесь будет выводиться статистика и график смен.
+            </div>
+        </section>
+
+        <!-- ВКЛАДКА: КАЛЬКУЛЯТОР (ИНТЕГРАЦИЯ) -->
+        <section id="tab-calculator" class="tab-content active">
+            
+            <!-- Языки (выбор происходит автоматически при старте) -->
+            <div class="language-tabs">
+                <div class="lang-tab" onclick="setLang('Eng')">Eng</div>
+                <div class="lang-tab" onclick="setLang('Pol')">Pol</div>
+                <div class="lang-tab" onclick="setLang('Esp')">Esp</div>
+                <div class="lang-tab" onclick="setLang('Ukr')">Ukr</div>
+                <div class="lang-tab" onclick="setLang('Pyc')">Pyc</div>
+            </div>
+
+            <div class="calc-card">
+                <label class="label" id="l_qty">Количество штук</label>
+                <input type="number" id="quantity" class="time-field" placeholder="0">
+
+                <label class="label" id="l_tpi">Время на 1 штуку</label>
+                <div id="timePerItem" class="time-field" onclick="openPicker('timePerItem')">00:00:30</div>
+
+                <div class="prep-card" id="prepToggle" onclick="togglePrep()">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div class="radio-circle"><div class="radio-dot" id="radioDot"></div></div>
+                        <span><b style="font-size: 17px; color: #fff;" id="l_prep">Подготовка</b><br><small style="color: var(--text-muted);" id="l_prepSub">15 минут к норме</small></span>
+                    </div>
+                    <div id="statusLabel" style="font-size:13px; color:var(--text-muted); font-weight:bold;">НЕ АКТИВНО</div>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <label class="label" id="l_start">Начало</label>
+                        <div id="startTime" class="time-field" onclick="openPicker('startTime', true)">08:00</div>
+                    </div>
+                    <div style="flex: 1;">
+                        <label class="label" id="l_end">Окончание</label>
+                        <div id="endTime" class="time-field" onclick="openPicker('endTime')">00:00:00</div>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-calc" id="b_calc" onclick="calculate()">Рассчитать</button>
+                    <button class="btn btn-info" id="b_info" onclick="openInstruction()">Инструкция</button>
+                </div>
+                
+                <!-- Контейнер для вывода графиков и кнопки сохранения -->
+                <div id="result"></div>
+            </div>
+        </section>
+
+        <!-- ВКЛАДКА: ИСТОРИЯ -->
+        <section id="tab-history" class="tab-content">
+            <h2 style="text-align: center; margin-top: 0;">История</h2>
+            <div class="calc-card" style="text-align: center; color: var(--text-muted);">
+                Здесь будет выгрузка ваших расчетов.
+            </div>
+        </section>
+
+        <!-- НИЖНЯЯ НАВИГАЦИЯ -->
+        <nav class="bottom-nav">
+            <div class="nav-item" onclick="switchTab('tab-home', this)"><svg viewBox="0 0 24 24"><path d="M12 3L4 9V21H9V14H15V21H20V9L12 3Z"/></svg></div>
+            <div class="nav-item" onclick="switchTab('tab-history', this)"><svg viewBox="0 0 24 24"><path d="M3 13H15V11H3V13ZM3 17H15V15H3V17ZM3 9H15V7H3V9ZM17 13H21V11H17V13ZM17 17H21V15H17V17ZM17 7V9H21V7H17Z"/></svg></div>
+            <div class="nav-item btn-plus active" onclick="switchTab('tab-calculator', this)"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM17 13H13V17H11V13H7V11H11V7H13V11H17V13Z"/></svg></div>
+        </nav>
+    </div>
+
+    <!-- ВИДЖЕТ ЧАТА (Плавает над всем) -->
+    <div id="chat-container">
+        <div id="chat-button" onclick="toggleChat()">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+        </div>
+        <div id="chat-window">
+            <div class="chat-header">
+                <span>Поддержка</span>
+                <span onclick="toggleChat()" style="cursor:pointer; font-size: 20px;">&times;</span>
+            </div>
+            <div class="chat-form" id="chat-form-container">
+                <div id="form-error">Заполните поля корректно</div>
+                <input type="text" id="consult-name" placeholder="Имя">
+                <input type="tel" id="consult-phone" placeholder="Телефон" oninput="this.value = this.value.replace(/[^0-9+() -]/g, '')">
+                <input type="email" id="consult-email" placeholder="Email">
+                <textarea id="consult-message" placeholder="Сообщение"></textarea>
+                <div class="captcha-block">
+                    <span id="captcha-question"></span>
+                    <input type="text" id="captcha-answer" placeholder="Ответ" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                </div>
+                <button onclick="sendData()">Отправить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ОВЕРЛЕИ КАЛЬКУЛЯТОРА (Скрытые модалки) -->
+    <div id="pickerOverlay" class="picker-overlay">
+        <div class="picker-container">
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px; color:#fff; font-size:17px;">
+                <span onclick="closePicker()" id="p_cancel" style="color:var(--text-muted); cursor:pointer;">Отмена</span>
+                <b id="p_title">Время</b>
+                <span onclick="confirmPicker()" id="p_done" style="color:var(--accent-blue); cursor:pointer;">Готово</span>
+            </div>
+            <div class="picker-wheels">
+                <div class="picker-highlight"></div>
+                <div class="wheel" id="hWheel"></div><div class="wheel" id="mWheel"></div><div class="wheel" id="sWheel"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="infoOverlay" class="picker-overlay">
+        <div class="picker-container" style="max-height:85vh; overflow-y:auto;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:20px; position:sticky; top:0; background:var(--bg-card); padding-bottom:10px; z-index:10;">
+                <b style="font-size:20px; color:#fff;" id="i_title">Инструкция</b>
+                <span onclick="closeInstruction()" id="i_close" style="color:var(--text-muted); cursor:pointer;">Закрыть</span>
+            </div>
+            <div id="instructionContent"></div>
+        </div>
+    </div>
+
+    <!-- ==============================================
+         ОБЪЕДИНЕННАЯ ЛОГИКА (APP + CALC + CHAT)
+         ============================================== -->
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+
+        // Ссылка на сервер базы данных (Google Script)
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbz84m_0nSSY_WBlNu-BZYhCHXSGtTC3671Zr68H69WAHNFNXg3JR9p0r9Md4XqKTsd_yw/exec";
+        
+        let calculatedEff = 0;
+        let calculatedStart = "";
+        let calculatedEnd = "";
+
+        // --- 1. ЛОГИКА ПОДКЛЮЧЕНИЯ И СМЕНЫ ВКЛАДОК (APP) ---
+        window.handleInitResponse = function(data) {
+            if (data.active) {
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+                document.getElementById('ui-username').innerText = tg.initDataUnsafe?.user?.first_name || "Пользователь";
+                document.getElementById('ui-users').innerText = data.usersCount;
+            } else {
+                document.getElementById('status').innerHTML = `<span style="color:var(--accent-red)">${data.message}</span>`;
+            }
+        };
+
+        function initApp() {
+            const userId = tg.initDataUnsafe?.user?.id || "0";
+            const script = document.createElement('script');
+            script.src = `${GAS_URL}?action=get_status&userId=${userId}&callback=handleInitResponse`;
+            document.body.appendChild(script);
+        }
+
+        function switchTab(tabId, el) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            el.classList.add('active');
+        }
+
+        // --- 2. ЛОГИКА КАЛЬКУЛЯТОРА И ПЕРЕВОДОВ ---
+        let activeField = null, isPrepActive = false, shortFormat = false, currentLang = 'Pyc';
+
+        const tr = {
+          'Pyc': {
+            labels: { qty:'Количество штук', tpi:'Время на 1 штуку', prep:'Подготовка', prepSub:'15 минут к норме', start:'Начало', end:'Окончание', active:'АКТИВНО', inactive:'НЕ АКТИВНО' },
+            btns: { calc:'Рассчитать', info:'Инструкция', cancel:'Отмена', done:'Готово', close:'Закрыть', pick:'Время', save:'Сохранить результат' },
+            stats: { success:'Успеваемость', zone:'Зона:', plan:'План окончания:', norm:'Норма на всё:', spent1:'Затрачено на 1 шт:', spentNorm:'Время нормы затрачено:', fact:'Факт. окончание:' },
+            legend: ['Риск', 'Не плохо', 'Норма'],
+            zones: { risk: 'Красная зона риска', orange: 'Оранжевая зона', green: 'Зелёная зона', over: 'Красная зона' },
+            msgs: { fail: 'ВЫ НЕ СПРАВЛЯЕТЕСЬ!', push: 'ПОДНАЖМИТЕ!', good: 'Хороший темп, ТАК ДЕРЖАТЬ!', over: 'ВЫ ПРЕВЫШАЕТЕ НОРМУ!' },
+            instr: [{t: 'Как пользоваться', c: '1. Впишите количество штук.<br>2. Время с чертежа.<br>3. Активируйте Подготовку.<br>4. Укажите время.'}]
+          },
+          'Eng': {
+            labels: { qty:'Quantity', tpi:'Time per item', prep:'Preparation', prepSub:'15 min to norm', start:'Start', end:'End', active:'ACTIVE', inactive:'INACTIVE' },
+            btns: { calc:'Calculate', info:'Instruction', cancel:'Cancel', done:'Done', close:'Close', pick:'Time', save:'Save to Database' },
+            stats: { success:'Efficiency', zone:'Zone:', plan:'Planned end:', norm:'Total norm:', spent1:'Spent per item:', spentNorm:'Norm time spent:', fact:'Fact. end:' },
+            legend: ['Risk', 'Not bad', 'Normal'],
+            zones: { risk: 'Red Risk Zone', orange: 'Orange Zone', green: 'Green Zone', over: 'Red Zone' },
+            msgs: { fail: 'YOU ARE FAILING!', push: 'PUSH HARDER!', good: 'Good pace KEEP IT UP!', over: 'OVER LIMIT!' },
+            instr: [{t: 'How to use', c: '1. Enter quantity.<br>2. Time from drawing.<br>3. Activate Prep.<br>4. Set start/end.'}]
+          },
+          'Pol': {
+            labels: { qty:'Ilość sztuk', tpi:'Czas na 1 sztukę', prep:'Przygotowanie', prepSub:'15 min do normy', start:'Początek', end:'Koniec', active:'AKTYWNE', inactive:'NIEAKTYWNE' },
+            btns: { calc:'Oblicz', info:'Instrukcja', cancel:'Anuluj', done:'Gotowe', close:'Zamknij', pick:'Czas', save:'Zapisz wynik' },
+            stats: { success:'Wydajność', zone:'Strefa:', plan:'Planowany koniec:', norm:'Norma całkowita:', spent1:'Czas na 1 szt:', spentNorm:'Zużyty czas normy:', fact:'Fakt. koniec:' },
+            legend: ['Ryzyko', 'Nieźle', 'Norma'],
+            zones: { risk: 'Czerwona strefa ryzyka', orange: 'Pomarańczowa strefa', green: 'Zielona strefa', over: 'Czerwona strefa' },
+            msgs: { fail: 'NIE DAJESZ RADY!', push: 'PRZYCIŚNIJ!', good: 'Dobre tempo TAK TRZYMAĆ!', over: 'PRZEKRACZASZ NORMĘ!' },
+            instr: [{t: 'Jak używać', c: '1. Wpisz ilość.<br>2. Czas z rysunku.<br>3. Aktywuj "Przygotowanie".<br>4. Ustaw czas.'}]
+          },
+          'Esp': {
+            labels: { qty:'Cantidad', tpi:'Tiempo por pieza', prep:'Preparación', prepSub:'15 min a la norma', start:'Inicio', end:'Fin', active:'ACTIVO', inactive:'INACTIVO' },
+            btns: { calc:'Calcular', info:'Instrucción', cancel:'Cancelar', done:'Hecho', close:'Cerrar', pick:'Tiempo', save:'Guardar resultado' },
+            stats: { success:'Eficiencia', zone:'Zona:', plan:'Fin previsto:', norm:'Norma total:', spent1:'Gasto por 1 pza:', spentNorm:'Tiempo norma gastado:', fact:'Fin real:' },
+            legend: ['Riesgo', 'Regular', 'Normal'],
+            zones: { risk: 'Zona Roja de Riesgo', orange: 'Zona Naranja', green: 'Zona Verde', over: 'Zona Roja' },
+            msgs: { fail: '¡NO ESTÁS CUMPLIENDO!', push: '¡APRIETA EL PASO!', good: 'Buen ritmo ¡SIGUE ASÍ!', over: '¡EXCEDES LA NORMA!' },
+            instr: [{t: 'Cómo usar', c: '1. Ingrese cantidad.<br>2. Tiempo del dibujo.<br>3. Active Preparación.<br>4. Indique hora.'}]
+          },
+          'Ukr': {
+            labels: { qty:'Кількість штук', tpi:'Час на 1 штуку', prep:'Підготовка', prepSub:'15 хвилин до норми', start:'Початок', end:'Закінчення', active:'АКТИВНО', inactive:'НЕ АКТИВНО' },
+            btns: { calc:'Розрахувати', info:'Інструкція', cancel:'Відміна', done:'Готово', close:'Закрити', pick:'Час', save:'Зберегти результат' },
+            stats: { success:'Успішність', zone:'Зона:', plan:'План закінчення:', norm:'Норма на все:', spent1:'Витрачено на 1 шт:', spentNorm:'Час норми витрачено:', fact:'Факт. закінчення:' },
+            legend: ['Ризик', 'Не погано', 'Норма'],
+            zones: { risk: 'Червона зона ризику', orange: 'Помаранчева зона', green: 'Зелена зона', over: 'Червона зона' },
+            msgs: { fail: 'ВИ НЕ СПРАВЛЯЄТЕСЬ!', push: 'ПІДНАТИСНІТЬ!', good: 'Хороший темп ТАК ТРИМАТИ!', over: 'ВИ ПЕРЕВИЩУЄТЕ НОРМУ!' },
+            instr: [{t: 'Як користуватися', c: '1. Впишіть кількість штук.<br>2. Час з креслення.<br>3. Активуйте Підготовку.<br>4. Вкажіть час.'}]
+          }
+        };
+
+        function setLang(lang) {
+            currentLang = tr[lang] ? lang : 'Pyc';
+            const t = tr[currentLang];
+            document.querySelectorAll('.lang-tab').forEach(el => el.classList.toggle('active', el.textContent === lang));
+
+            document.getElementById('l_qty').textContent = t.labels.qty;
+            document.getElementById('l_tpi').textContent = t.labels.tpi;
+            document.getElementById('l_prep').textContent = t.labels.prep;
+            document.getElementById('l_prepSub').textContent = t.labels.prepSub;
+            document.getElementById('l_start').textContent = t.labels.start;
+            document.getElementById('l_end').textContent = t.labels.end;
+            document.getElementById('b_calc').textContent = t.btns.calc;
+            document.getElementById('b_info').textContent = t.btns.info;
+            document.getElementById('p_cancel').textContent = t.btns.cancel;
+            document.getElementById('p_done').textContent = t.btns.done;
+            document.getElementById('p_title').textContent = t.btns.pick;
+            document.getElementById('i_title').textContent = t.btns.info;
+            document.getElementById('i_close').textContent = t.btns.close;
+            updatePrepStatus();
+
+            let html = '';
+            t.instr.forEach(item => {
+                html += `<div style="background:var(--bg-dark); border-radius:8px; margin-bottom:8px; border:1px solid var(--border-color);"><div style="padding:15px; color:var(--accent-blue); cursor:pointer;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display==='none'?'block':'none'">${item.t}</div><div style="padding:0 15px 15px; color:#fff; display:none;">${item.c}</div></div>`;
+            });
+            document.getElementById('instructionContent').innerHTML = html;
+            if(document.getElementById('result').innerHTML !== "") calculate();
+        }
+
+        // РУЛЕТКИ (Pickers)
+        function initWheel(id, max) {
+            const w = document.getElementById(id); w.innerHTML = '<div class="spacer"></div>';
+            for (let i=0; i<=max; i++) { let d = document.createElement('div'); d.textContent = String(i).padStart(2,'0'); w.appendChild(d); }
+            w.innerHTML += '<div class="spacer"></div>';
+            w.onscroll = () => { let idx = Math.round(w.scrollTop/40); w.querySelectorAll('div:not(.spacer)').forEach((item, i) => item.classList.toggle('selected', i === idx)); };
+        }
+        initWheel('hWheel', 23); initWheel('mWheel', 59); initWheel('sWheel', 59);
+
+        function openPicker(id, isShort=false) { activeField = id; shortFormat = isShort; document.getElementById('sWheel').style.display = isShort ? 'none' : 'block'; document.getElementById('pickerOverlay').style.display = 'flex'; }
+        function closePicker() { document.getElementById('pickerOverlay').style.display = 'none'; }
+        function confirmPicker() {
+            const h = document.querySelector('#hWheel .selected')?.textContent || "00", m = document.querySelector('#mWheel .selected')?.textContent || "00", s = document.querySelector('#sWheel .selected')?.textContent || "00";
+            document.getElementById(activeField).textContent = shortFormat ? `${h}:${m}` : `${h}:${m}:${s}`; closePicker();
+        }
+
+        function openInstruction() { document.getElementById('infoOverlay').style.display = 'flex'; }
+        function closeInstruction() { document.getElementById('infoOverlay').style.display = 'none'; }
+
+        function togglePrep() { isPrepActive = !isPrepActive; updatePrepStatus(); }
+        function updatePrepStatus() {
+            const t = tr[currentLang];
+            document.getElementById('radioDot').style.display = isPrepActive ? 'block' : 'none';
+            document.getElementById('prepToggle').classList.toggle('active', isPrepActive);
+            document.getElementById('statusLabel').textContent = isPrepActive ? t.labels.active : t.labels.inactive;
+            document.getElementById('statusLabel').style.color = isPrepActive ? 'var(--accent-green)' : 'var(--text-muted)';
+        }
+
+        function parseToSec(str) { let p = str.split(':').map(Number); return p.length === 3 ? p[0]*3600 + p[1]*60 + p[2] : p[0]*3600 + p[1]*60; }
+        function formatTime(s) { let h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = Math.round(s%60); return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
+
+        // ГЛАВНЫЙ РАСЧЕТ И ВЫВОД ГРАФИКА
+        function calculate() {
+            const q = parseFloat(document.getElementById('quantity').value) || 0; if (!q) return;
+            const t = tr[currentLang];
+            const tpi = parseToSec(document.getElementById('timePerItem').textContent), prep = isPrepActive ? 900 : 0, norm = (q * tpi) + prep;
+            
+            calculatedStart = document.getElementById('startTime').textContent;
+            calculatedEnd = document.getElementById('endTime').textContent;
+            const start = parseToSec(calculatedStart), plan = formatTime((start + norm) % 86400);
+            
+            let eff = 0, spent = "--:--:--", spentPer = "--:--:--";
+            if (calculatedEnd !== "00:00:00") { 
+                let FactS = parseToSec(calculatedEnd), FactT = FactS >= start ? FactS - start : (86400 - start) + FactS; 
+                eff = Math.round((norm / FactT) * 100); 
+                spent = formatTime(FactT); 
+                spentPer = formatTime((FactT - prep) / q); 
+            }
+
+            calculatedEff = eff;
+
+            let clr = "var(--text-muted)", zn = "---", msg = "", alrt = "";
+            if (eff > 0) {
+                if (eff < 65) { clr="var(--accent-red)"; zn=t.zones.risk; msg=t.msgs.fail; alrt="alert-red"; }
+                else if (eff < 75) { clr="var(--accent-orange)"; zn=t.zones.orange; msg=t.msgs.push; alrt="alert-orange"; }
+                else if (eff <= 100) { clr="var(--accent-green)"; zn=t.zones.green; msg=t.msgs.good; alrt="alert-green"; }
+                else { clr="var(--accent-red)"; zn=t.zones.over; msg=t.msgs.over; alrt="alert-red"; }
+            }
+
+            const off = 440 - (440 * Math.min(eff, 100)) / 100;
+            
+            document.getElementById('result').innerHTML = `
+                <div class="history-card">
+                    <div class="chart-container">
+                        <svg class="chart-svg" viewBox="0 0 160 160"><circle class="chart-bg" cx="80" cy="80" r="70" /><circle class="chart-fill" cx="80" cy="80" r="70" style="stroke:${clr}; stroke-dasharray:440; stroke-dashoffset:${off};" /></svg>
+                        <div class="chart-text"><span class="chart-percent" style="color:${clr}">${eff}%</span><span class="chart-label">${t.stats.success}</span></div>
+                    </div>
+                    
+                    <div class="status-alert ${alrt}">${t.stats.zone} <b>${zn}</b><br>${msg}</div>
+                    
+                    <div class="legend">
+                        <div class="legend-item"><div class="legend-dot" style="background:var(--accent-red)"></div>${t.legend[0]}</div>
+                        <div class="legend-item"><div class="legend-dot" style="background:var(--accent-orange)"></div>${t.legend[1]}</div>
+                        <div class="legend-item"><div class="legend-dot" style="background:var(--accent-green)"></div>${t.legend[2]}</div>
+                    </div>
+                    
+                    <div class="stat-list">
+                        <div class="stat-item"><div class="item-label"><div class="dot" style="background:var(--accent-green)"></div>${t.stats.plan}</div><b>${plan}</b></div>
+                        <div class="stat-item"><div class="item-label"><div class="dot" style="background:var(--accent-red)"></div>${t.stats.norm}</div><b>${formatTime(norm)}</b></div>
+                        <div class="stat-item"><div class="item-label"><div class="dot" style="background:#00bcd4"></div>${t.stats.spent1}</div><b>${spentPer}</b></div>
+                        <div class="stat-item"><div class="item-label"><div class="dot" style="background:var(--accent-blue)"></div>${t.stats.spentNorm}</div><b>${spent}</b></div>
+                        <div class="stat-item"><div class="item-label"><div class="dot" style="background:var(--accent-orange)"></div>${t.stats.fact}</div><b>${calculatedEnd}</b></div>
+                    </div>
+                    
+                    <button class="btn btn-save" id="btn-save-db" onclick="saveToDatabase()">${t.btns.save}</button>
+                </div>`;
+                
+            tg.HapticFeedback.notificationOccurred('success');
+        }
+
+        // --- 3. ЛОГИКА СОХРАНЕНИЯ В GOOGLE ТАБЛИЦУ ---
+        window.handleSaveResponse = function(data) {
+            const btn = document.getElementById('btn-save-db');
+            if (data.success) {
+                btn.innerText = "✅ Сохранено";
+                btn.style.background = "var(--bg-dark)";
+                btn.disabled = true;
+                tg.HapticFeedback.notificationOccurred('success');
+            } else {
+                btn.innerText = "❌ Ошибка";
+                btn.style.opacity = "1";
+            }
+        };
+
+        function saveToDatabase() {
+            if (calculatedEff === 0 || calculatedEnd === "00:00:00") { tg.showAlert("Завершите смену для сохранения."); return; }
+            const userId = tg.initDataUnsafe?.user?.id || "0";
+            const userName = encodeURIComponent(tg.initDataUnsafe?.user?.first_name || "User");
+            const btn = document.getElementById('btn-save-db');
+            btn.innerText = "Сохранение...";
+            btn.style.opacity = "0.7";
+
+            const script = document.createElement('script');
+            script.src = `${GAS_URL}?action=save_calc&userId=${userId}&userName=${userName}&start=${calculatedStart}&end=${calculatedEnd}&total=${calculatedEff}%25&callback=handleSaveResponse`;
+            document.body.appendChild(script);
+        }
+
+        // --- 4. ЛОГИКА ЧАТА ---
+        let captchaA, captchaB;
+        function generateCaptcha() { captchaA = Math.floor(Math.random()*10)+1; captchaB = Math.floor(Math.random()*10)+1; document.getElementById('captcha-question').innerText = `${captchaA} + ${captchaB} =`; }
+        function toggleChat() {
+            const win = document.getElementById('chat-window'), btn = document.getElementById('chat-button');
+            const isHidden = win.style.display === 'none' || win.style.display === '';
+            if (isHidden) generateCaptcha();
+            win.style.display = isHidden ? 'flex' : 'none';
+            btn.style.display = isHidden ? 'none' : 'flex';
+        }
+        function sendData() {
+            const n = document.getElementById('consult-name'), p = document.getElementById('consult-phone'), e = document.getElementById('consult-email'), m = document.getElementById('consult-message'), a = document.getElementById('captcha-answer'), err = document.getElementById('form-error');
+            [n, p, e, m, a].forEach(el => el.classList.remove('error-border')); err.style.display = 'none';
+            let valid = true;
+            if (!n.value.trim()) { n.classList.add('error-border'); valid = false; }
+            if (!p.value.trim()) { p.classList.add('error-border'); valid = false; }
+            if (!e.value.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.value)) { e.classList.add('error-border'); valid = false; }
+            if (!m.value.trim()) { m.classList.add('error-border'); valid = false; }
+            if (parseInt(a.value) !== (captchaA + captchaB)) { a.classList.add('error-border'); valid = false; }
+            if (!valid) { err.style.display = 'block'; generateCaptcha(); a.value = ''; return; }
+
+            const btn = document.querySelector('.chat-form button'); btn.innerText = 'Отправка...'; btn.disabled = true;
+            let txt = `Имя: ${n.value}\nТелефон: ${p.value}\nEmail: ${e.value}\nСообщение: ${m.value}`;
+            
+            fetch(`https://api.telegram.org/bot8549556171:AAH7a-IIGLJMB_YN0fA86nvPzErdIv5T3to/sendMessage`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: '5104562726', text: txt })
+            }).then(() => {
+                document.getElementById('chat-form-container').innerHTML = '<div class="success-message">Успешно отправлено!</div>';
+                setTimeout(() => { toggleChat(); }, 3000);
+            }).catch(() => { btn.innerText = 'Ошибка'; });
+        }
+
+        // --- 5. АВТООПРЕДЕЛЕНИЕ ЯЗЫКА И СТАРТ ---
+        function autoDetectLanguage() {
+            const tgLang = tg.initDataUnsafe?.user?.language_code || 'ru';
+            let targetLang = 'Eng'; 
+            
+            if (tgLang === 'ru' || tgLang === 'be' || tgLang === 'kk') {
+                targetLang = 'Pyc';
+            } else if (tgLang === 'uk') {
+                targetLang = 'Ukr';
+            } else if (tgLang === 'pl') {
+                targetLang = 'Pol';
+            } else if (tgLang === 'es') {
+                targetLang = 'Esp';
+            }
+            return targetLang;
+        }
+
+        setLang(autoDetectLanguage());
+        initApp();
+    </script>
+</body>
+</html>
