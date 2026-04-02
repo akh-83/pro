@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SkrawMet App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root { --bg: #1a1d29; --card: #222635; --blue: #5b7ded; --green: #00e676; --text: #ffffff; --muted: #7b839c; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 0; padding-bottom: 80px; }
+        
+        /* Лоадер */
+        #loading-screen { display: flex; flex-direction: column; height: 100vh; align-items: center; justify-content: center; }
+        .loader { border: 4px solid #2a2e40; border-top: 4px solid var(--blue); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        #app { display: none; }
+        .top-bar { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; background: var(--bg); position: sticky; top: 0; z-index: 10;}
+        .username { font-size: 18px; margin: 0; font-weight: bold;}
+        .badge { background: #2a2e40; padding: 5px 12px; border-radius: 20px; font-size: 12px; }
+        
+        /* Вкладки */
+        .tab-content { display: none; padding: 20px; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Дизайн Калькулятора */
+        .calc-card { background: var(--card); border-radius: 16px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-size: 14px; color: var(--muted); margin-bottom: 8px; }
+        .input-group input { width: 100%; background: #1a1d29; border: 1px solid #2a2e40; color: white; padding: 12px; border-radius: 10px; font-size: 16px; box-sizing: border-box; outline: none; }
+        .input-group input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.5; }
+        
+        .result-box { margin-top: 20px; padding: 15px; background: rgba(91, 125, 237, 0.1); border: 1px dashed var(--blue); border-radius: 10px; text-align: center; }
+        .result-box span { font-size: 24px; font-weight: bold; color: var(--blue); }
+        
+        .btn-main { width: 100%; background: var(--blue); color: white; border: none; padding: 15px; border-radius: 12px; font-size: 16px; font-weight: bold; margin-top: 15px; cursor: pointer; transition: 0.2s; }
+        .btn-main:active { transform: scale(0.97); opacity: 0.8; }
+        .btn-success { background: var(--green); }
+
+        /* Нижнее меню */
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: var(--card); display: flex; justify-content: space-around; padding: 10px 0 calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid #2a2e40;}
+        .nav-item { color: var(--muted); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 50px; height: 50px; }
+        .nav-item svg { width: 24px; height: 24px; fill: currentColor; transition: 0.2s; }
+        .nav-item.active { color: var(--blue); }
+        .nav-item.active svg { transform: scale(1.1); }
+        .nav-item.btn-plus { color: var(--green); }
+        .nav-item.btn-plus svg { width: 36px; height: 36px; }
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen">
+        <div class="loader"></div>
+        <div id="status" style="color: var(--muted);">Подключение...</div>
+    </div>
+
+    <div id="app">
+        <div class="top-bar">
+            <h2 class="username" id="ui-username">User</h2>
+            <div class="badge">База: <span id="ui-users">0</span></div>
+        </div>
+
+        <div id="tab-home" class="tab-content">
+            <h2 style="text-align: center;">Главная</h2>
+            <p style="text-align: center; color: var(--muted);">Здесь будет статистика</p>
+        </div>
+
+        <!-- ВКЛАДКА КАЛЬКУЛЯТОР -->
+        <div id="tab-calculator" class="tab-content active">
+            <div class="calc-card">
+                <h3 style="margin-top: 0; margin-bottom: 20px; text-align: center;">Расчет нормы</h3>
+                
+                <div class="input-group">
+                    <label>Начало смены</label>
+                    <input type="time" id="time-start" value="08:00">
+                </div>
+                
+                <div class="input-group">
+                    <label>Конец смены</label>
+                    <input type="time" id="time-end" value="17:00">
+                </div>
+                
+                <div class="input-group">
+                    <label>Обед / Перерыв (минут)</label>
+                    <input type="number" id="time-break" value="60" placeholder="Например: 60">
+                </div>
+
+                <div class="result-box" style="display:none;" id="result-container">
+                    Итого к оплате:<br>
+                    <span id="result-hours">0</span> ч.
+                </div>
+
+                <button class="btn-main" id="btn-calc" onclick="calculateNorm()">Рассчитать</button>
+                <button class="btn-main btn-success" id="btn-save" style="display:none;" onclick="saveNorm()">Сохранить в базу</button>
+            </div>
+        </div>
+
+        <div class="bottom-nav">
+            <div class="nav-item" onclick="switchTab('tab-home', this)"><svg viewBox="0 0 24 24"><path d="M12 3L4 9V21H9V14H15V21H20V9L12 3Z"/></svg></div>
+            <div class="nav-item btn-plus active" onclick="switchTab('tab-calculator', this)"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM17 13H13V17H11V13H7V11H11V7H13V11H17V13Z"/></svg></div>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbz84m_0nSSY_WBlNu-BZYhCHXSGtTC3671Zr68H69WAHNFNXg3JR9p0r9Md4XqKTsd_yw/exec";
+        
+        let calculatedTotal = 0;
+
+        // --- 1. ЛОГИКА ВКЛЮЧЕНИЯ ПРИЛОЖЕНИЯ ---
+        window.handleInitResponse = function(data) {
+            if (data.active) {
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+                document.getElementById('ui-username').innerText = tg.initDataUnsafe?.user?.first_name || "Пользователь";
+                document.getElementById('ui-users').innerText = data.usersCount;
+            } else {
+                document.getElementById('status').innerHTML = `<span style="color:#ff4f4f">${data.message}</span>`;
+            }
+        };
+
+        function init() {
+            const userId = tg.initDataUnsafe?.user?.id || "0";
+            const script = document.createElement('script');
+            script.src = `${GAS_URL}?action=get_status&userId=${userId}&callback=handleInitResponse`;
+            document.body.appendChild(script);
+        }
+
+        // --- 2. ЛОГИКА РАСЧЕТА ---
+        function calculateNorm() {
+            const start = document.getElementById('time-start').value;
+            const end = document.getElementById('time-end').value;
+            const breakMin = document.getElementById('time-break').value || 0;
+
+            if (!start || !end) { tg.showAlert("Заполните время начала и конца!"); return; }
+
+            // Превращаем время в минуты от начала дня
+            const startMins = parseInt(start.split(':')[0]) * 60 + parseInt(start.split(':')[1]);
+            let endMins = parseInt(end.split(':')[0]) * 60 + parseInt(end.split(':')[1]);
+            
+            // Если смена перешла через полночь (например с 22:00 до 06:00)
+            if (endMins < startMins) endMins += 24 * 60;
+
+            // Считаем чистое время
+            const totalMins = endMins - startMins - parseInt(breakMin);
+            
+            if (totalMins <= 0) { tg.showAlert("Ошибка: неверное время"); return; }
+
+            // Переводим в часы с десятыми (например 8.5 часов)
+            calculatedTotal = (totalMins / 60).toFixed(2);
+
+            // Показываем результат и кнопку сохранения
+            document.getElementById('result-hours').innerText = calculatedTotal;
+            document.getElementById('result-container').style.display = 'block';
+            document.getElementById('btn-calc').style.display = 'none';
+            document.getElementById('btn-save').style.display = 'block';
+            
+            // Вибрация (Haptic feedback) для красоты
+            tg.HapticFeedback.notificationOccurred('success');
+        }
+
+        // --- 3. ЛОГИКА СОХРАНЕНИЯ В ТАБЛИЦУ ---
+        window.handleSaveResponse = function(data) {
+            if (data.success) {
+                tg.showAlert("✅ Смена успешно сохранена!");
+                // Сбрасываем интерфейс
+                document.getElementById('result-container').style.display = 'none';
+                document.getElementById('btn-calc').style.display = 'block';
+                document.getElementById('btn-save').style.display = 'none';
+                tg.HapticFeedback.notificationOccurred('success');
+            } else {
+                tg.showAlert("❌ Ошибка при сохранении");
+            }
+        };
+
+        function saveNorm() {
+            const start = document.getElementById('time-start').value;
+            const end = document.getElementById('time-end').value;
+            const userId = tg.initDataUnsafe?.user?.id || "0";
+            const userName = encodeURIComponent(tg.initDataUnsafe?.user?.first_name || "User");
+
+            const btn = document.getElementById('btn-save');
+            btn.innerText = "Сохранение...";
+            btn.style.opacity = "0.7";
+
+            const script = document.createElement('script');
+            script.src = `${GAS_URL}?action=save_calc&userId=${userId}&userName=${userName}&start=${start}&end=${end}&total=${calculatedTotal}&callback=handleSaveResponse`;
+            document.body.appendChild(script);
+            
+            // Возвращаем кнопку в норму через 2 сек (если ответ задержится)
+            setTimeout(() => { btn.innerText = "Сохранить в базу"; btn.style.opacity = "1"; }, 2000);
+        }
+
+        // Переключение вкладок
+        function switchTab(tabId, el) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            el.classList.add('active');
+        }
+
+        init();
+    </script>
+</body>
+</html>
