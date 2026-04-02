@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SkrawMet App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root { --bg: #1a1d29; --card: #222635; --blue: #5b7ded; --text: #ffffff; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; text-align: center; }
+        .loader { border: 4px solid #2a2e40; border-top: 4px solid var(--blue); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #app { display: none; }
+        .error { color: #ff4f4f; padding: 20px; }
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen">
+        <div class="loader"></div>
+        <div id="status">Подключение к серверу...</div>
+    </div>
+
+    <div id="app">
+        <h1>Привет, <span id="user-name"></span>!</h1>
+        <p>Приложение успешно запущено.</p>
+        <div style="background: var(--card); padding: 15px; border-radius: 10px;">
+            Пользователей в базе: <span id="user-count">0</span>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbz84m_0nSSY_WBlNu-BZYhCHXSGtTC3671Zr68H69WAHNFNXg3JR9p0r9Md4XqKTsd_yw/exec";
+
+        // Функция-обработчик ответа от Google (JSONP)
+        window.handleResponse = function(data) {
+            if (data.active) {
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+                document.getElementById('user-name').innerText = tg.initDataUnsafe?.user?.first_name || "Пользователь";
+                document.getElementById('user-count').innerText = data.usersCount;
+            } else {
+                document.getElementById('status').innerHTML = `<div class="error">Сервер временно недоступен:<br>${data.message}</div>`;
+            }
+        };
+
+        function init() {
+            const userId = tg.initDataUnsafe?.user?.id || "0";
+            
+            // Создаем временный "скрипт" для обхода блокировок
+            const script = document.createElement('script');
+            script.src = `${GAS_URL}?action=get_status&userId=${userId}&callback=handleResponse`;
+            
+            // Если скрипт не загрузится за 10 сек
+            const timeout = setTimeout(() => {
+                document.getElementById('status').innerHTML = `<div class="error">Превышено время ожидания.<br>Проверьте интернет.</div>`;
+            }, 10000);
+
+            script.onload = () => clearTimeout(timeout);
+            script.onerror = () => {
+                clearTimeout(timeout);
+                document.getElementById('status').innerHTML = `<div class="error">Критическая ошибка сети.<br>Свяжитесь с админом.</div>`;
+            };
+
+            document.body.appendChild(script);
+        }
+
+        init();
+    </script>
+</body>
+</html>
