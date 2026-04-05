@@ -137,8 +137,8 @@
       <div id="tab-history" class="main-tab-content">
           <div class="dash-section-title" id="t_hist_title" style="margin-top:10px; width: 94%; max-width: 400px; text-align: left; box-sizing: border-box;">История нормы</div>
           <div style="display:flex; gap:10px; margin-bottom: 15px; width: 94%; max-width: 400px; box-sizing: border-box;">
-              <!-- Ввод ограничен только цифрами с помощью inputmode и oninput -->
-              <input type="text" inputmode="numeric" id="proSearchInput" class="time-field" style="margin:0; padding: 10px; font-size: 15px; flex:1;" oninput="this.value = this.value.replace(/[^0-9]/g, ''); filterHistory()">
+              <!-- Ввод ограничен цифрами и дефисом -->
+              <input type="text" inputmode="text" id="proSearchInput" class="time-field" style="margin:0; padding: 10px; font-size: 15px; flex:1;" oninput="this.value = this.value.replace(/[^0-9\-]/g, ''); filterHistory()">
               <button class="btn btn-calc" id="b_search" style="width:auto; padding:0 20px; font-size:15px;" onclick="filterHistory()">Поиск</button>
           </div>
           <!-- Блок для отображения количества совпадений -->
@@ -193,6 +193,7 @@
       <div id="tab-info" class="main-tab-content">
           <div class="dash-section-title" id="i_title_info" style="margin-top:10px; width: 94%; max-width: 400px; text-align: left; box-sizing: border-box;">Инструкция</div>
           <div id="instructionContentNorm" style="width: 94%; max-width: 400px; box-sizing: border-box;"></div>
+          <button class="btn btn-calc" id="btn_help" style="width: 94%; max-width: 400px; margin-top: 15px;" onclick="openModal('helpModalOverlay')">Помощь</button>
       </div>
   </div>
 
@@ -234,6 +235,9 @@
       <b style="font-size:22px; color:#fff;" id="rcp_title">Регистрация RCP</b>
       <p style="color:#8b949e; font-size:14px; margin: 15px 0 5px;" id="rcp_desc">Укажите время начала работы</p>
       
+      <label class="label" id="rcp_lbl_worker" style="color:#8b949e; text-align:left; width:100%; display:block; margin-bottom:5px;">Рабочий номер</label>
+      <input type="text" inputmode="numeric" id="rcpWorkerInput" class="time-field" placeholder="12345" oninput="this.value = this.value.replace(/[^0-9]/g, '')" style="margin-top:0; margin-bottom:15px; text-align: center;">
+
       <div id="rcpTodayDate" style="color:#58a6ff; font-weight:bold; font-size:18px; margin-bottom:15px;"></div>
       
       <div id="rcpStartTime" class="time-field" style="text-align:center; font-size:24px; font-weight:bold;" onclick="openPicker('rcpStartTime', true)">06:00</div>
@@ -264,6 +268,20 @@
       </div>
   </div>
 
+  <!-- Оверлей Помощи -->
+  <div id="helpModalOverlay" class="picker-overlay" style="z-index: 10050;">
+      <div class="picker-container" style="width:90%; max-width:320px;">
+          <div style="display:flex; justify-content:center; margin-bottom:15px; color:#fff;">
+              <b style="font-size:20px;" id="h_title">Помощь</b>
+          </div>
+          <textarea id="helpTextInput" class="time-field" style="min-height: 100px; resize: none; font-size:16px;" placeholder="Опишите проблему..."></textarea>
+          <div class="btn-group" style="margin-top: 10px;">
+              <button class="btn btn-calc" id="h_btn_send" onclick="sendHelp()">Отправить</button>
+          </div>
+          <button class="btn btn-info" style="width:100%; margin-top:10px;" id="h_btn_cancel" onclick="closeModal('helpModalOverlay')">Отмена</button>
+      </div>
+  </div>
+
   <div id="saveModalOverlay" class="picker-overlay" style="z-index: 10050;">
     <div class="picker-container" style="width:90%; max-width:320px; overflow-y:auto; max-height:90vh;">
       <div style="display:flex; justify-content:space-between; margin-bottom:20px; color:#fff;">
@@ -273,8 +291,8 @@
       <label class="label" id="s_date">Дата</label>
       <input type="text" id="saveDate" class="time-field" placeholder="DD.MM.YYYY">
 
-      <label class="label" id="s_pro">PRO (только цифры)</label>
-      <input type="text" inputmode="numeric" id="savePro" class="time-field" placeholder="001003" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+      <label class="label" id="s_pro">PRO (цифры и -)</label>
+      <input type="text" inputmode="text" id="savePro" class="time-field" placeholder="2026-03710-001-002" oninput="this.value = this.value.replace(/[^0-9\-]/g, '')">
       
       <div style="display:flex; gap:10px;">
         <div style="flex:1;">
@@ -340,16 +358,18 @@
         legend: ['Риск', 'Не плохо', 'Норма'], zones: { risk: 'Красная зона риска', orange: 'Оранжевая зона', green: 'Зелёная зона', over: 'Красная зона' },
         msgs: { fail: 'ВЫ НЕ СПРАВЛЯЕТЕСЬ!', push: 'ПОДНАЖМИТЕ!', good: 'Хороший темп ТАК ДЕРЖАТЬ!', over: 'ВЫ ПРЕВЫШАЕТЕ НОРМУ!' },
         instrNorm: [
-            {t: 'Как пользоваться', c: '1. Впишите количество штук.<br>2. Время с чертежа.<br>3. Активируйте "Подготовку".<br>4. Укажите время начала/конца.'}, 
-            {t: 'Как понимать цвета?', c: 'Красный — Вы не справляетесь, Оранжевый — Не плохо но увеличьте темп, Зеленый — Вы справляетесь.'}, 
-            {t: 'Процентное соотношение', c: 'Ниже 65%: Красная зона.<br>65-75%: Оранжевый.<br>75-100%: Зеленый.<br>Выше 100%: Красный (Перебор).'}
+            {t: 'Вкладки приложения', c: 'Приложение состоит из 5 вкладок: Главная, История, Калькулятор, Рабочее время (RCP) и Инструкция.'},
+            {t: 'Главная страница', c: 'Здесь отображается ваш текущий статус RCP, календарь со средним процентом успеваемости за дни, статистика за месяц и график успеваемости.'},
+            {t: 'История работы', c: 'Список всех ваших сохраненных расчетов. Вы можете искать по PRO (включая цифры и дефисы), редактировать и удалять записи. Сортировка идет от новых к старым.'},
+            {t: 'Калькулятор', c: 'Введите количество штук, время на 1 штуку (из чертежа), время начала и окончания. Нажмите "Рассчитать", чтобы увидеть процент и зону.'},
+            {t: 'Рабочее время (RCP)', c: 'Ваш табель рабочего времени. При входе открывается смена, где нужно указать рабочий номер. В календаре можно смотреть и редактировать отработанные часы за прошлые дни.'}
         ],
-        saveModal: { title: 'Сохранение результата', pro: 'PRO (только цифры)', stan: 'Номер Stanowiska', type: 'Вид работы', btnSave: 'Сохранить', btnCancel: 'Отмена', date: 'Дата' },
+        saveModal: { title: 'Сохранение результата', pro: 'PRO', stan: 'Номер Stanowiska', type: 'Вид работы', btnSave: 'Сохранить', btnCancel: 'Отмена', date: 'Дата' },
         workTime: { thisMonth: 'Ваши рабочие часы:', thisMonthDash: 'За этот месяц:', lastMonth: 'В прошлом месяце:', h: 'ч.', search: 'Поиск по PRO', uwagi: 'Uwagi (заметки)' },
         rcp: { title: 'Регистрация RCP', desc: 'Укажите время начала работы', startBtn: 'Подтвердить', closeTitle: 'Закрыть рабочее время', startedAt: 'Начато в:', closeBtn: 'Завершить', closedToday: 'За сегодня.' },
         dash: { empty: 'Истории сохранений пока нет.', title: 'УСПЕВАЕМОСТЬ', zonePrefix: 'Вы сейчас находитесь в зоне:', cal: 'Календарь', noData: 'Нет данных', dyn: 'Динамика успеваемости', hist: 'История нормы', days: ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'], date: 'число', lblDate: 'Дата:', lblStart: 'Время начала', lblEnd: 'Время окончания', lblAvg: 'Среднее по %', types: { t1: 'Сварка ручная', t2: 'Сварка на обротнице', t3: 'Поправка' }, saved: 'Успешно сохранено!', confirmDel: 'Удалить эту запись?', matches: 'Найдено совпадений', pcs: 'шт.', settings: 'НАСТРОЙКИ', yes: 'Да', no: 'Нет', stanLabel: 'Рабочее место', fillFields: 'Заполните поля!' },
         rcpTabTitle: 'Рабочее время (RCP)', editRcp: 'Редактирование RCP', reStart: 'Время начала', reEnd: 'Время окончания', del: 'Удалить',
-        onlyNums: 'только цифры'
+        proLabel: 'цифры и -', rcpWorkerNum: 'Рабочий номер', helpBtn: 'Помощь', helpTitle: 'Помощь', helpPlaceholder: 'Опишите проблему...', helpSend: 'Отправить', helpSent: 'Сообщение отправлено!'
       },
       'Eng': {
         months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
@@ -359,16 +379,18 @@
         legend: ['Risk', 'Not bad', 'Normal'], zones: { risk: 'Red Zone', orange: 'Orange Zone', green: 'Green Zone', over: 'Over' },
         msgs: { fail: 'FAIL!', push: 'PUSH!', good: 'GOOD!', over: 'OVER!' }, 
         instrNorm: [
-            {t: 'How to use', c: '1. Enter quantity.<br>2. Time from drawing.<br>3. Activate "Preparation".<br>4. Specify start/end time.'},
-            {t: 'How to read colors?', c: 'Red - Failing, Orange - Not bad but increase pace, Green - Succeeding.'},
-            {t: 'Percentages', c: 'Below 65%: Red zone.<br>65-75%: Orange.<br>75-100%: Green.<br>Above 100%: Red (Over).'}
+            {t: 'App Tabs', c: 'The app consists of 5 tabs: Main, History, Calculator, Work Time (RCP), and Instruction.'},
+            {t: 'Main Page', c: 'Displays your current RCP status, a calendar with daily average percentage, monthly stats, and performance chart.'},
+            {t: 'History', c: 'A list of all your saved calculations. You can search by PRO (including dashes), edit, and delete records. Sorted newest to oldest.'},
+            {t: 'Calculator', c: 'Enter the quantity, time per item, start and end time. Click "Calculate" to see the percentage and performance zone.'},
+            {t: 'Work Time (RCP)', c: 'Your timesheet. A shift opens on first login, requiring a work number. View and edit past hours in the calendar.'}
         ],
-        saveModal: { title: 'Save Result', pro: 'PRO (numbers only)', stan: 'Workplace Number', type: 'Type of work', btnSave: 'Save', btnCancel: 'Cancel', date: 'Date' },
+        saveModal: { title: 'Save Result', pro: 'PRO', stan: 'Workplace Number', type: 'Type of work', btnSave: 'Save', btnCancel: 'Cancel', date: 'Date' },
         workTime: { thisMonth: 'Your work hours:', thisMonthDash: 'For this month:', lastMonth: 'Last month:', h: 'h.', search: 'Search PRO', uwagi: 'Notes' },
         rcp: { title: 'RCP Registration', desc: 'Specify work start time', startBtn: 'Confirm', closeTitle: 'Close work time', startedAt: 'Started at:', closeBtn: 'End', closedToday: 'For today.' },
         dash: { empty: 'No history yet.', title: 'EFFICIENCY', zonePrefix: 'Current zone:', cal: 'Calendar', noData: 'No Data', dyn: 'Performance Dynamics', hist: 'Norm History', days: ['Mo','Tu','We','Th','Fr','Sa','Su'], date: 'date', lblDate: 'Date:', lblStart: 'Start time', lblEnd: 'End time', lblAvg: 'Average %', types: { t1: 'Manual welding', t2: 'Rotary welding', t3: 'Correction' }, saved: 'Saved successfully!', confirmDel: 'Delete this record?', matches: 'Matches found', pcs: 'pcs.', settings: 'SETTINGS', yes: 'Yes', no: 'No', stanLabel: 'Workplace', fillFields: 'Fill in all fields!' },
         rcpTabTitle: 'Work Time (RCP)', editRcp: 'Edit RCP', reStart: 'Start time', reEnd: 'End time', del: 'Delete',
-        onlyNums: 'numbers only'
+        proLabel: 'numbers and -', rcpWorkerNum: 'Work number', helpBtn: 'Help', helpTitle: 'Help Form', helpPlaceholder: 'Describe your problem...', helpSend: 'Send', helpSent: 'Message sent!'
       },
       'Pol': {
         months: ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec', 'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'],
@@ -378,16 +400,18 @@
         legend: ['Ryzyko', 'Nieźle', 'Norma'], zones: { risk: 'Ryzyko', orange: 'Pomarańczowa', green: 'Zielona', over: 'Nadmiar' },
         msgs: { fail: 'ŹLE!', push: 'SZYBCIEJ!', good: 'DOBRZE!', over: 'ZA DUŻO!' }, 
         instrNorm: [
-            {t: 'Jak używać', c: '1. Wpisz ilość.<br>2. Czas z rysunku.<br>3. Aktywuj "Przygotowanie".<br>4. Podaj czas rozpoczęcia/zakończenia.'},
-            {t: 'Znaczenie kolorów', c: 'Czerwony — Nie radzisz sobie, Pomarańczowy — Nieźle, ale przyspiesz, Zielony — Dajesz radę.'},
-            {t: 'Procenty', c: 'Poniżej 65%: Czerwona.<br>65-75%: Pomarańczowa.<br>75-100%: Zielona.<br>Powyżej 100%: Czerwona (Nadmiar).'}
+            {t: 'Zakładki', c: 'Aplikacja składa się z 5 zakładek: Główna, Historia, Kalkulator, Czas pracy (RCP) i Instrukcja.'},
+            {t: 'Strona Główna', c: 'Wyświetla obecny status RCP, kalendarz ze średnim procentem za każdy dzień, statystyki miesięczne i wykres.'},
+            {t: 'Historia', c: 'Lista zapisanych obliczeń. Możesz szukać po numerze PRO, edytować i usuwać wpisy. Sortowane od najnowszych do najstarszych.'},
+            {t: 'Kalkulator', c: 'Wpisz ilość, czas na sztukę, czas rozpoczęcia i zakończenia. Kliknij "Oblicz", aby zobaczyć wynik i strefę.'},
+            {t: 'Czas pracy (RCP)', c: 'Twoja karta czasu pracy. Zmiana otwiera się przy logowaniu. W kalendarzu możesz edytować wcześniejsze godziny.'}
         ],
-        saveModal: { title: 'Zapisz wynik', pro: 'PRO (tylko cyfry)', stan: 'Numer Stanowiska', type: 'Rodzaj pracy', btnSave: 'Zapisz', btnCancel: 'Anuluj', date: 'Data' },
+        saveModal: { title: 'Zapisz wynik', pro: 'PRO', stan: 'Numer Stanowiska', type: 'Rodzaj pracy', btnSave: 'Zapisz', btnCancel: 'Anuluj', date: 'Data' },
         workTime: { thisMonth: 'Twoje godziny pracy:', thisMonthDash: 'W tym miesiącu:', lastMonth: 'W zeszłym miesiącu:', h: 'godz.', search: 'Szukaj PRO', uwagi: 'Uwagi' },
         rcp: { title: 'Rejestracja RCP', desc: 'Podaj czas rozpoczęcia pracy', startBtn: 'Zatwierdź', closeTitle: 'Zamknij czas pracy', startedAt: 'Rozpoczęto o:', closeBtn: 'Zakończ', closedToday: 'Za dzisiaj.' },
         dash: { empty: 'Brak historii.', title: 'WYDAJNOŚĆ', zonePrefix: 'Obecna strefa:', cal: 'Kalendarz', noData: 'Brak danych', dyn: 'Dynamika wydajności', hist: 'Historia Normy', days: ['Pn','Wt','Śr','Cz','Pt','Sb','Nd'], date: 'dzień', lblDate: 'Data:', lblStart: 'Czas rozpoczęcia', lblEnd: 'Czas zakończenia', lblAvg: 'Średnia %', types: { t1: 'Spawanie ręczne', t2: 'Spawanie na obrotnicę', t3: 'Poprawka' }, saved: 'Zapisano!', confirmDel: 'Usunąć ten wpis?', matches: 'Znaleziono dopasowań', pcs: 'szt.', settings: 'USTAWIENIA', yes: 'Tak', no: 'Nie', stanLabel: 'Stanowisko', fillFields: 'Wypełnij pola!' },
         rcpTabTitle: 'Czas pracy (RCP)', editRcp: 'Edycja RCP', reStart: 'Czas rozpoczęcia', reEnd: 'Czas zakończenia', del: 'Usuń',
-        onlyNums: 'tylko cyfry'
+        proLabel: 'cyfry i -', rcpWorkerNum: 'Numer roboczy', helpBtn: 'Pomoc', helpTitle: 'Formularz Pomocy', helpPlaceholder: 'Opisz swój problem...', helpSend: 'Wyślij', helpSent: 'Wiadomość wysłana!'
       },
       'Esp': {
         months: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
@@ -397,16 +421,18 @@
         legend: ['Riesgo', 'Regular', 'Normal'], zones: { risk: 'Riesgo', orange: 'Naranja', green: 'Verde', over: 'Exceso' },
         msgs: { fail: 'MAL!', push: 'MAS RAPIDO!', good: 'BIEN!', over: 'EXCESO!' }, 
         instrNorm: [
-            {t: 'Cómo usar', c: '1. Ingrese la cantidad.<br>2. Tiempo del plano.<br>3. Active "Preparación".<br>4. Especifique hora de inicio/fin.'},
-            {t: 'Significado de colores', c: 'Rojo — No lo estás logrando, Naranja — Nada mal pero aumenta el ritmo, Verde — Lo estás logrando.'},
-            {t: 'Porcentaje', c: 'Menos del 65%: Zona roja.<br>65-75%: Naranja.<br>75-100%: Verde.<br>Más del 100%: Rojo (Exceso).'}
+            {t: 'Pestañas de la App', c: 'La aplicación tiene 5 pestañas: Principal, Historia, Calculadora, Tiempo de trabajo (RCP) e Instrucciones.'},
+            {t: 'Página Principal', c: 'Muestra tu estado actual de RCP, calendario con el porcentaje promedio, estadísticas mensuales y gráfico de rendimiento.'},
+            {t: 'Historia', c: 'Lista de cálculos guardados. Puedes buscar por PRO, editar y eliminar registros. Ordenado del más reciente al más antiguo.'},
+            {t: 'Calculadora', c: 'Ingresa la cantidad, tiempo por pieza, inicio y fin. Presiona "Calcular" para ver tu eficiencia.'},
+            {t: 'Tiempo de trabajo (RCP)', c: 'Tu registro de tiempo. Al ingresar se abre un turno. Puedes ver y editar horas pasadas en el calendario.'}
         ],
-        saveModal: { title: 'Guardar Resultado', pro: 'PRO (sólo números)', stan: 'Número de Puesto', type: 'Tipo de trabajo', btnSave: 'Guardar', btnCancel: 'Cancelar', date: 'Fecha' },
+        saveModal: { title: 'Guardar Resultado', pro: 'PRO', stan: 'Número de Puesto', type: 'Tipo de trabajo', btnSave: 'Guardar', btnCancel: 'Cancelar', date: 'Fecha' },
         workTime: { thisMonth: 'Tus horas de trabajo:', thisMonthDash: 'Para este mes:', lastMonth: 'El mes pasado:', h: 'h.', search: 'Buscar PRO', uwagi: 'Notas' },
         rcp: { title: 'Registro RCP', desc: 'Indique hora de inicio', startBtn: 'Confirmar', closeTitle: 'Cerrar tiempo', startedAt: 'Iniciado a las:', closeBtn: 'Terminar', closedToday: 'Por hoy.' },
         dash: { empty: 'Aún no hay historia.', title: 'EFICIENCIA', zonePrefix: 'Zona actual:', cal: 'Calendario', noData: 'Sin datos', dyn: 'Dinámica de rendimiento', hist: 'Historia de Norma', days: ['Lu','Ma','Mi','Ju','Vi','Sa','Do'], date: 'día', lblDate: 'Fecha:', lblStart: 'Hora de inicio', lblEnd: 'Hora de fin', lblAvg: 'Promedio %', types: { t1: 'Soldadura manual', t2: 'Soldadura rotativa', t3: 'Corrección' }, saved: 'Guardado con éxito!', confirmDel: '¿Borrar este registro?', matches: 'Coincidencias', pcs: 'pzas.', settings: 'AJUSTES', yes: 'Sí', no: 'No', stanLabel: 'Puesto', fillFields: '¡Rellena los campos!' },
         rcpTabTitle: 'Tiempo de trabajo (RCP)', editRcp: 'Editar RCP', reStart: 'Hora de inicio', reEnd: 'Hora de fin', del: 'Eliminar',
-        onlyNums: 'sólo números'
+        proLabel: 'números y -', rcpWorkerNum: 'Número de trabajo', helpBtn: 'Ayuda', helpTitle: 'Formulario de Ayuda', helpPlaceholder: 'Describe tu problema...', helpSend: 'Enviar', helpSent: '¡Mensaje enviado!'
       },
       'Ukr': {
         months: ['Січень', 'Лютий', 'Березень', 'Квітень', 'Травень', 'Червень', 'Липень', 'Серпень', 'Вересень', 'Жовтень', 'Листопад', 'Грудень'],
@@ -416,16 +442,18 @@
         legend: ['Ризик', 'Не погано', 'Норма'], zones: { risk: 'Ризик', orange: 'Помаранчева', green: 'Зелена', over: 'Перебір' },
         msgs: { fail: 'ПОГАНО!', push: 'ШВИДШЕ!', good: 'ДОБРЕ!', over: 'ПЕРЕБІР!' }, 
         instrNorm: [
-            {t: 'Як користуватись', c: '1. Впишіть кількість штук.<br>2. Час із креслення.<br>3. Активуйте "Підготовку".<br>4. Вкажіть час початку/закінчення.'},
-            {t: 'Як розуміти кольори?', c: 'Червоний — Ви не справляєтесь, Помаранчевий — Непогано, але збільште темп, Зелений — Ви справляєтесь.'},
-            {t: 'Процентне співвідношення', c: 'Нижче 65%: Червона зона.<br>65-75%: Помаранчева.<br>75-100%: Зелена.<br>Вище 100%: Червона (Перебір).'}
+            {t: 'Вкладки додатку', c: 'Додаток має 5 вкладок: Головна, Історія, Калькулятор, Робочий час (RCP) та Інструкція.'},
+            {t: 'Головна сторінка', c: 'Тут відображається статус RCP, календар з відсотком успішності, статистика за місяць та графік.'},
+            {t: 'Історія роботи', c: 'Список всіх ваших розрахунків. Можна шукати за PRO, редагувати та видаляти записи. Сортування від нових до старих.'},
+            {t: 'Калькулятор', c: 'Введіть кількість штук, час на 1 штуку, час початку і закінчення. Натисніть "Розрахувати", щоб побачити результат.'},
+            {t: 'Робочий час (RCP)', c: 'Ваш табель робочого часу. При вході відкривається зміна. У календарі можна редагувати відпрацьовані години.'}
         ],
-        saveModal: { title: 'Збереження результату', pro: 'PRO (тільки цифри)', stan: 'Номер Stanowiska', type: 'Вид роботи', btnSave: 'Зберегти', btnCancel: 'Відміна', date: 'Дата' },
+        saveModal: { title: 'Збереження результату', pro: 'PRO', stan: 'Номер Stanowiska', type: 'Вид роботи', btnSave: 'Зберегти', btnCancel: 'Відміна', date: 'Дата' },
         workTime: { thisMonth: 'Ваші робочі години:', thisMonthDash: 'За цей місяць:', lastMonth: 'Минулого місяця:', h: 'год.', search: 'Пошук по PRO', uwagi: 'Uwagi (нотатки)' },
         rcp: { title: 'Реєстрація RCP', desc: 'Вкажіть час початку роботи', startBtn: 'Підтвердити', closeTitle: 'Закрити робочий час', startedAt: 'Розпочато о:', closeBtn: 'Завершити', closedToday: 'За сьогодні.' },
         dash: { empty: 'Історії поки немає.', title: 'УСПІШНІСТЬ', zonePrefix: 'Ви зараз у зоні:', cal: 'Календар', noData: 'Немає даних', dyn: 'Динаміка успішності', hist: 'Історія норми', days: ['Пн','Вт','Ср','Чт','Пт','Сб','Нд'], date: 'число', lblDate: 'Дата:', lblStart: 'Час початку', lblEnd: 'Час закінчення', lblAvg: 'Середнє по %', types: { t1: 'Зварювання ручне', t2: 'Зварювання на обертачі', t3: 'Поправка' }, saved: 'Успішно збережено!', confirmDel: 'Видалити цей запис?', matches: 'Знайдено збігів', pcs: 'шт.', settings: 'НАЛАШТУВАННЯ', yes: 'Так', no: 'Ні', stanLabel: 'Робоче місце', fillFields: 'Заповніть поля!' },
         rcpTabTitle: 'Робочий час (RCP)', editRcp: 'Редагування RCP', reStart: 'Час початку', reEnd: 'Час закінчення', del: 'Видалити',
-        onlyNums: 'тільки цифри'
+        proLabel: 'цифри та -', rcpWorkerNum: 'Робочий номер', helpBtn: 'Допомога', helpTitle: 'Допомога', helpPlaceholder: 'Опишіть проблему...', helpSend: 'Відправити', helpSent: 'Повідомлення надіслано!'
       }
     };
 
@@ -543,8 +571,10 @@
 
     function confirmRCPStart() {
         const sTime = document.getElementById('rcpStartTime').textContent;
-        rcpState = { dateStr: getTodayStr(), start: sTime, end: null, timestamp: Date.now() };
+        const wNum = document.getElementById('rcpWorkerInput').value;
+        rcpState = { dateStr: getTodayStr(), start: sTime, end: null, timestamp: Date.now(), workerNum: wNum };
         saveRCPData();
+        document.getElementById('rcpWorkerInput').value = '';
         document.getElementById('rcpOverlay').style.display = 'none';
         openProfile();
     }
@@ -844,11 +874,11 @@
         if (!container) return;
         
         let html = "";
-        let filterStr = searchText ? searchText.replace(/[^0-9]/g, '') : "";
+        let filterStr = searchText ? searchText.replace(/[^0-9\-]/g, '') : "";
         let matchCount = 0;
 
         savedHistory.forEach(function(item, idx) {
-            let itemPro = item.pro ? item.pro.replace(/[^0-9]/g, '') : "";
+            let itemPro = item.pro ? item.pro.replace(/[^0-9\-]/g, '') : "";
             if (filterStr && itemPro.indexOf(filterStr) === -1) return; 
 
             matchCount++;
@@ -1097,6 +1127,7 @@
         container.innerHTML = 
             "<div class='profile-dashboard'>" +
                 rcpBlockHtml +
+                calHtml +
                 "<div style='background:#232a3b; border-radius:12px; padding:20px; border:1px solid #343e50; text-align:center; margin-bottom: 20px; width: 100%; box-sizing: border-box;'>" +
                     "<div class='chart-container' style='margin: 0 auto 10px;'>" +
                         "<svg class='chart-svg' viewBox='0 0 160 160'><circle class='chart-bg' cx='80' cy='80' r='70' /><circle class='chart-fill' cx='80' cy='80' r='70' style='stroke:" + mClr + "; stroke-dasharray:440; stroke-dashoffset:" + (monthAvg === 0 ? 440 : mOff) + ";' /></svg>" +
@@ -1108,9 +1139,17 @@
                         "<b style='color:" + mClr + "; font-size:14px;'>" + mMsg + "</b>" +
                     "</div>" +
                 "</div>" +
-                calHtml +
                 chartHtml +
             "</div>";
+    }
+
+    function sendHelp() {
+        let text = document.getElementById('helpTextInput').value;
+        if(!text.trim()) return;
+        const t = tr[currentLang];
+        if(tgApp && tgApp.showAlert) tgApp.showAlert(t.helpSent || "Сообщение отправлено!"); else alert(t.helpSent || "Сообщение отправлено!");
+        document.getElementById('helpTextInput').value = '';
+        closeModal('helpModalOverlay');
     }
 
     function setLang(lang) {
@@ -1133,7 +1172,14 @@
       document.getElementById('rcp_btn_start').textContent = t.rcp.startBtn;
 
       document.getElementById('s_title').textContent = t.saveModal.title;
-      if(document.getElementById('s_pro')) document.getElementById('s_pro').textContent = 'PRO (' + (t.onlyNums || 'только цифры') + ')';
+      if(document.getElementById('s_pro')) document.getElementById('s_pro').textContent = 'PRO (' + (t.proLabel || 'цифры и -') + ')';
+      if(document.getElementById('rcp_lbl_worker')) document.getElementById('rcp_lbl_worker').textContent = t.rcpWorkerNum;
+      if(document.getElementById('btn_help')) document.getElementById('btn_help').textContent = t.helpBtn;
+      if(document.getElementById('h_title')) document.getElementById('h_title').textContent = t.helpTitle;
+      if(document.getElementById('helpTextInput')) document.getElementById('helpTextInput').placeholder = t.helpPlaceholder;
+      if(document.getElementById('h_btn_send')) document.getElementById('h_btn_send').textContent = t.helpSend;
+      if(document.getElementById('h_btn_cancel')) document.getElementById('h_btn_cancel').textContent = t.saveModal.btnCancel;
+      
       if(document.getElementById('s_qty_lbl')) document.getElementById('s_qty_lbl').textContent = t.labels.qty;
       if(document.getElementById('s_start_lbl')) document.getElementById('s_start_lbl').textContent = t.labels.start;
       if(document.getElementById('s_end_lbl')) document.getElementById('s_end_lbl').textContent = t.labels.end;
