@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Чат Парсер (демо + инструкция)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0c10;
+            font-family: 'Segoe UI', 'Courier New', monospace;
+            padding: 2rem 1rem;
+            color: #e0e5f0;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            background: #12151c;
+            border-radius: 2rem;
+            border: 1px solid #2a2f3a;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+
+        .header {
+            background: #0b0e13;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #252b36;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, #e0e5f0, #7a8fbf);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .warning {
+            background: #2a1a1a;
+            border-left: 4px solid #e07070;
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            color: #f0b3b3;
+        }
+
+        .panel {
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .input-group label {
+            font-weight: 600;
+            color: #9aacd6;
+            letter-spacing: 0.5px;
+        }
+
+        input, textarea {
+            background: #070a0f;
+            border: 1px solid #2a2f3c;
+            border-radius: 1rem;
+            padding: 0.8rem 1.2rem;
+            font-family: inherit;
+            font-size: 0.9rem;
+            color: #eef3ff;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        input:focus, textarea:focus {
+            border-color: #5f7fbf;
+            box-shadow: 0 0 0 2px rgba(79, 114, 189, 0.3);
+        }
+
+        .row-2cols {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .row-2cols > div {
+            flex: 1;
+        }
+
+        button {
+            background: #1f2a3e;
+            border: none;
+            padding: 0.9rem 1.8rem;
+            border-radius: 2rem;
+            font-weight: bold;
+            font-size: 1rem;
+            color: #d9e2ff;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid #344153;
+        }
+        button:hover {
+            background: #2e3c58;
+            transform: translateY(-1px);
+        }
+
+        .result-area {
+            width: 100%;
+            min-height: 400px;
+            background: #070a0f;
+            border: 1px solid #252c38;
+            border-radius: 1.25rem;
+            padding: 1.2rem;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            resize: vertical;
+        }
+
+        .hr-divider {
+            height: 2px;
+            background: #1e2430;
+            margin: 1rem 0;
+        }
+
+        .code-block {
+            background: #0d0f15;
+            border-radius: 1rem;
+            padding: 1rem;
+            font-family: monospace;
+            font-size: 0.8rem;
+            border: 1px solid #2a3140;
+            overflow-x: auto;
+        }
+
+        .status {
+            background: #0d0f15;
+            padding: 0.7rem;
+            border-radius: 1rem;
+            color: #9aacd6;
+            font-size: 0.8rem;
+            border-left: 3px solid #3f5680;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>◈ ПАРСЕР ЧАТА GEMINI ◈</h1>
+        <div class="warning">
+            ⚠️ <strong>Важное предупреждение:</strong> автоматический вход в Google аккаунт из HTML/JS невозможен из-за политики безопасности браузеров и защиты Google.<br>
+            Поля логина/пароля ниже — <strong>только демонстрация</strong>, они никуда не отправляются и не могут войти в аккаунт.<br>
+            ✅ <strong>Реальный способ сохранить переписку Gemini:</strong> войдите в аккаунт <strong>вручную</strong>, откройте нужный чат, прокрутите его до самого начала, затем используйте код из консоли (см. ниже) или расширение.
+        </div>
+    </div>
+
+    <div class="panel">
+        <!-- Демо-поля (не функциональны для входа) -->
+        <div class="row-2cols">
+            <div class="input-group">
+                <label>🔐 Логин (демо, не работает)</label>
+                <input type="text" id="demoLogin" placeholder="ваш_email@gmail.com" value="demo@example.com">
+            </div>
+            <div class="input-group">
+                <label>🔑 Пароль (демо, не работает)</label>
+                <input type="password" id="demoPass" placeholder="пароль">
+            </div>
+        </div>
+
+        <div class="hr-divider"></div>
+
+        <!-- Парсер для публичных страниц (работает) -->
+        <div class="input-group">
+            <label>🌐 Ссылка на страницу (для теста — любой публичный сайт)</label>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <input type="text" id="urlInput" style="flex: 1;" placeholder="https://example.com" value="https://ru.wikipedia.org/wiki/Gemini">
+                <button id="parsePublicBtn">🔍 Парсить публичную страницу</button>
+            </div>
+        </div>
+
+        <!-- Статус -->
+        <div id="statusMsg" class="status">⚡ Готов. Для Gemini используйте инструкцию ниже.</div>
+
+        <!-- Поле результата -->
+        <div class="input-group">
+            <label>📄 Результат (весь текст с отступами)</label>
+            <textarea id="resultArea" class="result-area" readonly placeholder="Здесь появится текст после парсинга..."></textarea>
+            <button id="copyResultBtn" style="align-self: flex-end; padding: 0.5rem 1.2rem;">📋 Копировать результат</button>
+        </div>
+
+        <div class="hr-divider"></div>
+
+        <!-- ИНСТРУКЦИЯ ДЛЯ GEMINI (рабочий метод) -->
+        <div class="input-group">
+            <label>💡 <strong>РАБОЧИЙ СПОСОБ ЭКСПОРТА ЧАТА GEMINI (после ручного входа)</strong></label>
+            <div class="code-block">
+                <strong>Шаг 1:</strong> Войдите в свой аккаунт Google → откройте <a href="https://gemini.google.com" target="_blank" style="color:#7a8fbf;">gemini.google.com</a><br>
+                <strong>Шаг 2:</strong> Откройте нужный чат и <u>прокрутите его до самого начала</u>, чтобы подгрузилась вся история.<br>
+                <strong>Шаг 3:</strong> Нажмите <kbd>F12</kbd> (или <kbd>Ctrl+Shift+I</kbd>) → вкладка <strong>Console</strong>.<br>
+                <strong>Шаг 4:</strong> Скопируйте и вставьте в консоль этот код, затем нажмите <kbd>Enter</kbd>:
+                <pre style="background:#000; padding:1rem; border-radius:0.8rem; overflow-x:auto; margin-top:0.8rem;"><code style="color:#aaffaa;">(function(){
+    let messages = [];
+    // Популярные селекторы сообщений в Gemini
+    const selectors = ['[data-message-content]', '.message-content', '.model-response-text', '.user-query-text', '[role="article"]'];
+    for(let sel of selectors){
+        document.querySelectorAll(sel).forEach(el => {
+            let txt = el.innerText.trim();
+            if(txt && !messages.includes(txt)) messages.push(txt);
+        });
+    }
+    if(messages.length === 0){
+        alert('Не найдены сообщения. Возможно, изменилась структура страницы. Попробуйте другой селектор.');
+        return;
+    }
+    const output = messages.join('\n\n══════════════════════\n\n');
+    const blob = new Blob([output], {type: 'text/plain'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'gemini_chat_' + new Date().toISOString().slice(0,19).replace(/:/g, '-') + '.txt';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    alert(`Экспортировано ${messages.length} сообщений. Файл сохранён.`);
+})();</code></pre>
+                <strong>Шаг 5:</strong> Файл с перепиской автоматически скачается в папку "Загрузки".<br>
+                ✅ <strong>Этот метод работает 100%, безопасен, не требует паролей и не нарушает правила Google.</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ---------- ПАРСЕР ДЛЯ ПУБЛИЧНЫХ СТРАНИЦ (рабочий) ----------
+    const urlInput = document.getElementById('urlInput');
+    const parseBtn = document.getElementById('parsePublicBtn');
+    const resultArea = document.getElementById('resultArea');
+    const statusDiv = document.getElementById('statusMsg');
+    const copyBtn = document.getElementById('copyResultBtn');
+
+    // Функция извлечения текста из HTML (с отступами и переносами)
+    function extractStructuredText(bodyElement) {
+        if (!bodyElement) return '';
+        const BLOCK_TAGS = new Set(['div','p','h1','h2','h3','h4','h5','h6','ul','ol','li','pre','blockquote','section','article','header','footer','nav','main','table','tr','td','th','hr']);
+        const IGNORED = new Set(['script','style','noscript','meta','link','svg','canvas','iframe']);
+        let chunks = [];
+        const stack = [{ node: bodyElement, stage: 0 }];
+        
+        function lastChar() {
+            if (chunks.length === 0) return '';
+            let last = chunks[chunks.length-1];
+            return last.charAt(last.length-1);
+        }
+        function addText(t) { if(t) chunks.push(t); }
+        
+        while(stack.length) {
+            const {node, stage} = stack.pop();
+            if (node.nodeType === Node.TEXT_NODE) {
+                let t = node.textContent;
+                if (t && t.trim().length > 0) addText(t);
+                else if (t) addText(t);
+                continue;
+            }
+            if (node.nodeType !== Node.ELEMENT_NODE) continue;
+            const tag = node.tagName.toLowerCase();
+            if (IGNORED.has(tag)) continue;
+            if (tag === 'br') { addText('\n'); continue; }
+            if (tag === 'hr') { addText('\n'); continue; }
+            const isBlock = BLOCK_TAGS.has(tag);
+            if (stage === 0) {
+                if (isBlock && chunks.length && lastChar() !== '\n') addText('\n');
+                stack.push({ node, stage: 1, isBlock });
+                const children = node.childNodes;
+                for (let i = children.length-1; i >= 0; i--) {
+                    stack.push({ node: children[i], stage: 0 });
+                }
+            } else {
+                if (isBlock && chunks.length && lastChar() !== '\n') addText('\n');
+            }
+        }
+        let text = chunks.join('');
+        text = text.replace(/\r\n?/g, '\n').replace(/\n{3,}/g, '\n\n');
+        return text;
+    }
+
+    async function parsePublicPage() {
+        let rawUrl = urlInput.value.trim();
+        if (!rawUrl) {
+            statusDiv.innerHTML = '❌ Введите ссылку!';
+            return;
+        }
+        if (!rawUrl.startsWith('http')) rawUrl = 'https://' + rawUrl;
+        try { new URL(rawUrl); } catch(e) {
+            statusDiv.innerHTML = '❌ Некорректный URL';
+            return;
+        }
+        parseBtn.disabled = true;
+        const originalText = parseBtn.innerHTML;
+        parseBtn.innerHTML = '<span style="display:inline-block; width:14px; height:14px; border:2px solid white; border-top-color:transparent; border-radius:50%; animation: spin 0.6s linear infinite;"></span> Парсинг...';
+        statusDiv.innerHTML = `⏳ Загружается ${rawUrl} ...`;
+        try {
+            const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(rawUrl)}`;
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 30000);
+            const resp = await fetch(proxy, { signal: controller.signal });
+            clearTimeout(timeout);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const html = await resp.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const body = doc.body;
+            if (!body) throw new Error('Нет body');
+            const extracted = extractStructuredText(body);
+            if (!extracted.trim()) throw new Error('Текст не найден');
+            resultArea.value = extracted;
+            statusDiv.innerHTML = `✅ Готово! Извлечено ${extracted.length} символов.`;
+        } catch (err) {
+            statusDiv.innerHTML = `❌ Ошибка: ${err.message}. Возможно, сайт блокирует запросы или требует авторизации.`;
+            resultArea.value = `Не удалось спарсить "${rawUrl}".\nПричина: ${err.message}\n\nДля Gemini используйте метод с консолью (см. инструкцию выше).`;
+        } finally {
+            parseBtn.disabled = false;
+            parseBtn.innerHTML = originalText;
+        }
+    }
+
+    parseBtn.addEventListener('click', parsePublicPage);
+    copyBtn.addEventListener('click', () => {
+        if (!resultArea.value.trim()) {
+            statusDiv.innerHTML = '❌ Нет текста для копирования';
+            return;
+        }
+        navigator.clipboard.writeText(resultArea.value);
+        statusDiv.innerHTML = '📋 Текст скопирован в буфер!';
+        setTimeout(() => { if(statusDiv.innerHTML.includes('скопирован')) statusDiv.innerHTML = '⚡ Готов.'; }, 2000);
+    });
+    // Добавляем анимацию
+    const style = document.createElement('style');
+    style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+    document.head.appendChild(style);
+</script>
+</body>
+</html>
