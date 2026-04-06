@@ -36,7 +36,7 @@ const tr = {
     dash: { empty: 'Истории сохранений пока нет.', title: 'УСПЕВАЕМОСТЬ', zonePrefix: 'Вы сейчас находитесь в зоне:', cal: 'Календарь', noData: 'Нет данных', dyn: 'Динамика успеваемости', hist: 'История нормы', days: ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'], date: 'число', lblDate: 'Дата:', lblStart: 'Время начала', lblEnd: 'Время окончания', lblAvg: 'Среднее по %', types: { t1: 'Сварка ручная', t2: 'Сварка на обротнице', t3: 'Поправка' }, saved: 'Успешно сохранено!', confirmDel: 'Удалить эту запись?', matches: 'Найдено совпадений', pcs: 'шт.', settings: 'НАСТРОЙКИ', yes: 'Да', no: 'Нет', stanLabel: 'Рабочее место', fillFields: 'Заполните поля!' },
     rcpTabTitle: 'Рабочее время (RCP)', editRcp: 'Редактирование RCP', reStart: 'Время начала', reEnd: 'Время окончания', del: 'Удалить',
     proLabel: 'цифры и -', rcpWorkerNum: 'Рабочий номер', helpBtn: 'Помощь', helpTitle: 'Помощь', helpPlaceholder: 'Опишите проблему...', helpSend: 'Отправить', helpSent: 'Сообщение отправлено!',
-    auth: { title: 'Авторизация', desc: 'Введите ваш рабочий номер', btn: 'Войти' },
+    auth: { title: 'Авторизация', desc: 'Введите ваш рабочий номер', btn: 'Войти', confirmWorker: 'Подтвердите правильность ввода рабочего номера: ' },
     admin: { title: 'Панель Администратора', back: 'Выйти из профиля', users: 'Пользователи' }
   },
   'Eng': {
@@ -59,7 +59,7 @@ const tr = {
     dash: { empty: 'No history yet.', title: 'EFFICIENCY', zonePrefix: 'Current zone:', cal: 'Calendar', noData: 'No Data', dyn: 'Performance Dynamics', hist: 'Norm History', days: ['Mo','Tu','We','Th','Fr','Sa','Su'], date: 'date', lblDate: 'Date:', lblStart: 'Start time', lblEnd: 'End time', lblAvg: 'Average %', types: { t1: 'Manual welding', t2: 'Rotary welding', t3: 'Correction' }, saved: 'Saved successfully!', confirmDel: 'Delete this record?', matches: 'Matches found', pcs: 'pcs.', settings: 'SETTINGS', yes: 'Yes', no: 'No', stanLabel: 'Workplace', fillFields: 'Fill in all fields!' },
     rcpTabTitle: 'Work Time (RCP)', editRcp: 'Edit RCP', reStart: 'Start time', reEnd: 'End time', del: 'Delete',
     proLabel: 'numbers and -', rcpWorkerNum: 'Work number', helpBtn: 'Help', helpTitle: 'Help Form', helpPlaceholder: 'Describe your problem...', helpSend: 'Send', helpSent: 'Message sent!',
-    auth: { title: 'Authorization', desc: 'Enter your work number', btn: 'Login' },
+    auth: { title: 'Authorization', desc: 'Enter your work number', btn: 'Login', confirmWorker: 'Confirm the entered work number: ' },
     admin: { title: 'Admin Panel', back: 'Exit profile', users: 'Users' }
   },
   'Pol': {
@@ -82,7 +82,7 @@ const tr = {
     dash: { empty: 'Brak historii.', title: 'WYDAJNOŚĆ', zonePrefix: 'Obecna strefa:', cal: 'Kalendarz', noData: 'Brak danych', dyn: 'Dynamika wydajności', hist: 'Historia Normy', days: ['Pn','Wt','Śr','Cz','Pt','Sb','Nd'], date: 'dzień', lblDate: 'Data:', lblStart: 'Czas rozpoczęcia', lblEnd: 'Czas zakończenia', lblAvg: 'Średnia %', types: { t1: 'Spawanie ręczne', t2: 'Spawanie na obrotnicę', t3: 'Poprawka' }, saved: 'Zapisano!', confirmDel: 'Usunąć ten wpis?', matches: 'Znaleziono dopasowań', pcs: 'szt.', settings: 'USTAWIENIA', yes: 'Tak', no: 'Nie', stanLabel: 'Stanowisko', fillFields: 'Wypełnij pola!' },
     rcpTabTitle: 'Czas pracy (RCP)', editRcp: 'Edycja RCP', reStart: 'Czas rozpoczęcia', reEnd: 'Czas zakończenia', del: 'Usuń',
     proLabel: 'cyfry i -', rcpWorkerNum: 'Numer roboczy', helpBtn: 'Pomoc', helpTitle: 'Formularz Pomocy', helpPlaceholder: 'Opisz swój problem...', helpSend: 'Wyślij', helpSent: 'Wiadomość wysłana!',
-    auth: { title: 'Autoryzacja', desc: 'Wpisz numer roboczy', btn: 'Zaloguj się' },
+    auth: { title: 'Autoryzacja', desc: 'Wpisz numer roboczy', btn: 'Zaloguj się', confirmWorker: 'Potwierdź wprowadzony numer roboczy: ' },
     admin: { title: 'Panel administratora', back: 'Wyjdź z profilu', users: 'Użytkownicy' }
   },
   'Esp': {
@@ -105,7 +105,7 @@ const tr = {
     dash: { empty: 'Aún no hay historia.', title: 'EFICIENCIA', zonePrefix: 'Zona actual:', cal: 'Calendario', noData: 'Sin datos', dyn: 'Dinámica de rendimiento', hist: 'Historia de Norma', days: ['Lu','Ma','Mi','Ju','Vi','Sa','Do'], date: 'día', lblDate: 'Fecha:', lblStart: 'Hora de inicio', lblEnd: 'Hora de fin', lblAvg: 'Promedio %', types: { t1: 'Soldadura manual', t2: 'Soldadura rotativa', t3: 'Corrección' }, saved: 'Guardado con éxito!', confirmDel: '¿Borrar este registro?', matches: 'Coincidencias', pcs: 'pzas.', settings: 'AJUSTES', yes: 'Sí', no: 'No', stanLabel: 'Puesto', fillFields: '¡Rellena los campos!' },
     rcpTabTitle: 'Tiempo de trabajo (RCP)', editRcp: 'Editar RCP', reStart: 'Hora de inicio', reEnd: 'Hora de fin', del: 'Eliminar',
     proLabel: 'números y -', rcpWorkerNum: 'Número de trabajo', helpBtn: 'Ayuda', helpTitle: 'Formulario de Ayuda', helpPlaceholder: 'Describe tu problema...', helpSend: 'Enviar', helpSent: '¡Mensaje enviado!',
-    auth: { title: 'Autorización', desc: 'Ingrese su número de trabajo', btn: 'Iniciar sesión' },
+    auth: { title: 'Autorización', desc: 'Ingrese su número de trabajo', btn: 'Iniciar sesión', confirmWorker: 'Confirme el número de trabajo introducido: ' },
     admin: { title: 'Panel de administrador', back: 'Salir del perfil', users: 'Usuarios' }
   },
   'Ukr': {
@@ -128,7 +128,7 @@ const tr = {
     dash: { empty: 'Історії поки немає.', title: 'УСПІШНІСТЬ', zonePrefix: 'Ви зараз у зоні:', cal: 'Календар', noData: 'Немає даних', dyn: 'Динаміка успішності', hist: 'Історія норми', days: ['Пн','Вт','Ср','Чт','Пт','Сб','Нд'], date: 'число', lblDate: 'Дата:', lblStart: 'Час початку', lblEnd: 'Час закінчення', lblAvg: 'Середнє по %', types: { t1: 'Зварювання ручне', t2: 'Зварювання на обертачі', t3: 'Поправка' }, saved: 'Успішно збережено!', confirmDel: 'Видалити цей запис?', matches: 'Знайдено збігів', pcs: 'шт.', settings: 'НАЛАШТУВАННЯ', yes: 'Так', no: 'Ні', stanLabel: 'Робоче місце', fillFields: 'Заповніть поля!' },
     rcpTabTitle: 'Робочий час (RCP)', editRcp: 'Редагування RCP', reStart: 'Час початку', reEnd: 'Час закінчення', del: 'Видалити',
     proLabel: 'цифри та -', rcpWorkerNum: 'Робочий номер', helpBtn: 'Допомога', helpTitle: 'Допомога', helpPlaceholder: 'Опишіть проблему...', helpSend: 'Відправити', helpSent: 'Повідомлення надіслано!',
-    auth: { title: 'Авторизація', desc: 'Введіть робочий номер', btn: 'Увійти' },
+    auth: { title: 'Авторизація', desc: 'Введіть робочий номер', btn: 'Увійти', confirmWorker: 'Підтвердіть правильність введеного робочого номера: ' },
     admin: { title: 'Панель Адміністратора', back: 'Вийти з профілю', users: 'Користувачі' }
   }
 };
@@ -146,6 +146,12 @@ let editingRcpDateStr = null;
 
 function getTodayStr() { return new Date().toLocaleDateString('ru-RU'); }
 function getNowTime() { const now = new Date(); let h = now.getHours(); let m = now.getMinutes(); return (h<10?'0':'')+h + ':' + (m<10?'0':'')+m; }
+
+function updateHeader() {
+    let nameToDisplay = currentWorkerId ? "№ " + currentWorkerId : userFirstName;
+    if (isAdmin && viewingWorkerId) nameToDisplay = "Worker № " + viewingWorkerId;
+    document.getElementById('profileName').textContent = nameToDisplay;
+}
 
 async function apiCall(action, payload = {}) {
     const uid = tgApp?.initDataUnsafe?.user?.id || 'local';
@@ -165,6 +171,9 @@ async function apiCall(action, payload = {}) {
     try {
         const response = await fetch(GOOGLE_SCRIPT_URL, {
             method: 'POST',
+            headers: {
+                'Content-Type': 'text/plain;charset=utf-8',
+            },
             body: JSON.stringify(data)
         });
         return await response.json();
@@ -227,25 +236,69 @@ function switchMainTab(tabId, el) {
     if (el) el.classList.add('active');
 }
 
-function checkAuth() {
+async function checkAuth() {
     if (isAdmin && !viewingWorkerId) {
         loadAdminUsers();
         return;
     }
+    
+    document.getElementById('globalUserCount').textContent = "Загрузка...";
+    let tgId = tgApp?.initDataUnsafe?.user?.id || 'local';
+    
+    let res = await apiCall('getUserData', { user_id: tgId });
+    if (res && res.status === 'success') {
+        if (res.worker_id) {
+            currentWorkerId = res.worker_id;
+            localStorage.setItem('kkn_worker_id', currentWorkerId);
+        }
+        if (res.total_users) {
+            document.getElementById('globalUserCount').textContent = "users: " + res.total_users;
+        }
+    } else {
+        document.getElementById('globalUserCount').textContent = "users: --";
+    }
+
+    if (!currentWorkerId) {
+        currentWorkerId = localStorage.getItem('kkn_worker_id') || null;
+    }
+
     if (!currentWorkerId) {
         document.getElementById('authOverlay').style.display = 'flex';
         setLang(currentLang);
     } else {
+        updateHeader();
         initAppData();
     }
 }
 
-function saveWorkerId() {
+async function saveWorkerId() {
     const val = document.getElementById('authWorkerInput').value;
-    if (!val) return;
+    const t = tr[currentLang];
+    
+    if (!val) {
+        if(tgApp && tgApp.showAlert) tgApp.showAlert(t.dash.fillFields || "Введите номер!"); else alert(t.dash.fillFields || "Введите номер!");
+        return;
+    }
+    
+    let confirmMsg = (t.auth.confirmWorker || "Подтвердите правильность ввода рабочего номера: ") + val;
+    if (!confirm(confirmMsg)) {
+        return;
+    }
+    
+    document.getElementById('a_btn').textContent = "...";
+    document.getElementById('a_btn').disabled = true;
+
+    let tgId = tgApp?.initDataUnsafe?.user?.id || 'local';
+    let res = await apiCall('registerUser', { user_id: tgId, worker_id: val });
+    
+    document.getElementById('a_btn').textContent = t.auth.btn;
+    document.getElementById('a_btn').disabled = false;
+
     currentWorkerId = val;
     localStorage.setItem('kkn_worker_id', val);
     document.getElementById('authOverlay').style.display = 'none';
+    
+    updateHeader();
     initAppData();
 }
 
@@ -263,19 +316,24 @@ async function initAppData() {
          savedHistory = res.history || [];
          rcpHistory = res.rcpHistory || [];
          rcpState = res.rcpState || null;
+         if (res.total_users) document.getElementById('globalUserCount').textContent = "users: " + res.total_users;
+         else document.getElementById('globalUserCount').textContent = prevCountText !== "Загрузка данных..." ? prevCountText : "users: --";
          sortSavedHistory();
     } else {
-         // Очистка при ошибке или отсутствии данных
          savedHistory = [];
          rcpHistory = [];
          rcpState = null;
+         document.getElementById('globalUserCount').textContent = prevCountText !== "Загрузка данных..." ? prevCountText : "users: --";
     }
 
     afterDataLoad();
 }
 
 function afterDataLoad() {
-    document.getElementById('globalUserCount').textContent = isAdmin && viewingWorkerId ? "Admin Mode" : "users: 64";
+    if (isAdmin && viewingWorkerId) {
+        document.getElementById('globalUserCount').textContent = "Admin Mode";
+    }
+    updateHeader();
     checkRCP();
     openProfile();
     filterHistory();
@@ -310,6 +368,7 @@ function confirmRCPStart() {
     if(wNum && !currentWorkerId) {
         currentWorkerId = wNum;
         localStorage.setItem('kkn_worker_id', wNum);
+        updateHeader();
     }
     rcpState = { dateStr: getTodayStr(), start: sTime, end: null, timestamp: Date.now(), workerNum: wNum };
     saveRCPData();
@@ -1010,7 +1069,8 @@ function setLang(lang) {
   t.instrNorm.forEach(function(item) { htmlNorm += "<div style='background:#232a3b; border-radius:8px; margin-bottom:8px; border:1px solid #343e50; box-sizing: border-box; width: 100%;'><div style='padding:16px; display:flex; justify-content:space-between; cursor:pointer; color:#58a6ff; font-size:17px;' onclick='toggleAccordion(this)'>" + item.t + " <span>▼</span></div><div class='instr-white' style='padding:0 16px 16px; display:none;'>" + item.c + "</div></div>"; });
   document.getElementById('instructionContentNorm').innerHTML = htmlNorm;
 
-  if (currentWorkerId) {
+  if (currentWorkerId || viewingWorkerId) {
+      updateHeader();
       openProfile();
       filterHistory();
       renderRcpTab();
@@ -1120,7 +1180,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   const fallbacks = { 'ru': 'Пользователь', 'en': 'User', 'pl': 'Użytkownik', 'es': 'Usuario', 'uk': 'Користувач' };
   if (!tgApp || !tgApp.initDataUnsafe || !tgApp.initDataUnsafe.user || !tgApp.initDataUnsafe.user.first_name) {
-      document.getElementById('profileName').textContent = fallbacks[tgLang] || 'User';
+      userFirstName = fallbacks[tgLang] || 'User';
   }
 
   const langMap = { 'ru': 'Pyc', 'en': 'Eng', 'pl': 'Pol', 'es': 'Esp', 'uk': 'Ukr' };
