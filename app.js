@@ -4,7 +4,6 @@ const ADMIN_ID = '8543137368';
 const SHEET_ID = '1BOrsLbRsSsZ3gmuMKr9TEKQU9NAUxxDoJPrPNzBBFWI';
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx1PEdqphbHSCWEpNYv_4IurxSwV4w6aQQeuWtNx-FvKXFe92dKjWoQRiBYX2Uw54A9sg/exec'; // <--- ЗАМЕНИТЬ НА СВОЙ URL ПОСЛЕ ДЕПЛОЯ СКРИПТА
 
-var isCloudStorageSupported = tgApp && tgApp.isVersionAtLeast && tgApp.isVersionAtLeast('6.9');
 var isAdmin = false;
 var viewingWorkerId = null; 
 var currentWorkerId = localStorage.getItem('kkn_worker_id') || null;
@@ -235,7 +234,7 @@ function checkAuth() {
     }
     if (!currentWorkerId) {
         document.getElementById('authOverlay').style.display = 'flex';
-        setLang(currentLang); // Update translations in auth
+        setLang(currentLang);
     } else {
         initAppData();
     }
@@ -250,47 +249,41 @@ function saveWorkerId() {
     initAppData();
 }
 
-function initAppData() {
-    try {
-        if (isCloudStorageSupported) {
-            tgApp.CloudStorage.getItem('kkn_history_v2', function(e, v) {
-                if (!e && v) { savedHistory = JSON.parse(v); sortSavedHistory(); }
-            });
-            tgApp.CloudStorage.getItem('kkn_rcp_v1', function(e, v) {
-                if (!e && v) { const r = JSON.parse(v); rcpState = r.state; rcpHistory = r.history || []; }
-                afterLocalLoad();
-            });
-        } else {
-            const localH = localStorage.getItem('kkn_history_v2');
-            if (localH) { savedHistory = JSON.parse(localH); sortSavedHistory(); }
-            const localR = localStorage.getItem('kkn_rcp_v1');
-            if (localR) { const r = JSON.parse(localR); rcpState = r.state; rcpHistory = r.history || []; }
-            afterLocalLoad();
-        }
-    } catch(e) { afterLocalLoad(); }
+async function initAppData() {
+    if (!currentWorkerId && !viewingWorkerId) {
+        afterDataLoad();
+        return;
+    }
+
+    let prevCountText = document.getElementById('globalUserCount').textContent;
+    document.getElementById('globalUserCount').textContent = "Загрузка данных...";
+
+    let res = await apiCall('getData');
+    if (res && res.status === 'success') {
+         savedHistory = res.history || [];
+         rcpHistory = res.rcpHistory || [];
+         rcpState = res.rcpState || null;
+         sortSavedHistory();
+    } else {
+         // Очистка при ошибке или отсутствии данных
+         savedHistory = [];
+         rcpHistory = [];
+         rcpState = null;
+    }
+
+    afterDataLoad();
 }
 
-function afterLocalLoad() {
+function afterDataLoad() {
     document.getElementById('globalUserCount').textContent = isAdmin && viewingWorkerId ? "Admin Mode" : "users: 64";
     checkRCP();
     openProfile();
-    
-    // API SYNC - Fire & Forget
-    if (currentWorkerId || viewingWorkerId) {
-        apiCall('getData').then(res => {
-            if(res && res.status === 'success') {
-                 if(res.history) savedHistory = res.history;
-                 if(res.rcpHistory) rcpHistory = res.rcpHistory;
-                 if(res.rcpState) rcpState = res.rcpState;
-                 sortSavedHistory();
-                 openProfile();
-            }
-        });
-    }
+    filterHistory();
+    renderRcpTab();
 }
 
 function checkRCP() {
-    if(isAdmin && !viewingWorkerId) return; // Admins don't fill RCP for themselves unless viewing user
+    if(isAdmin && !viewingWorkerId) return; 
     const today = getTodayStr();
     if (rcpState && rcpState.dateStr !== today && !rcpState.end) {
         rcpState.end = "Auto (8h)";
@@ -308,11 +301,6 @@ function checkRCP() {
 
 function saveRCPData() {
     const data = { state: rcpState, history: rcpHistory };
-    try {
-        if (isCloudStorageSupported) tgApp.CloudStorage.setItem('kkn_rcp_v1', JSON.stringify(data), function(){});
-        else localStorage.setItem('kkn_rcp_v1', JSON.stringify(data));
-    } catch(e){}
-    
     apiCall('saveRCP', data);
 }
 
@@ -587,12 +575,6 @@ function confirmSave() {
     }
     
     sortSavedHistory();
-    
-    try {
-        if (isCloudStorageSupported) tgApp.CloudStorage.setItem('kkn_history_v2', JSON.stringify(savedHistory), function(){});
-        else localStorage.setItem('kkn_history_v2', JSON.stringify(savedHistory));
-    } catch(e){}
-
     apiCall('saveHistory', { history: savedHistory });
     
     closeModal('saveModalOverlay');
@@ -605,10 +587,6 @@ function deleteRecord(idx) {
     const t = tr[currentLang];
     if (confirm(t.dash.confirmDel)) {
         savedHistory.splice(idx, 1);
-        try {
-            if (isCloudStorageSupported) tgApp.CloudStorage.setItem('kkn_history_v2', JSON.stringify(savedHistory), function(){});
-            else localStorage.setItem('kkn_history_v2', JSON.stringify(savedHistory));
-        } catch(e){}
         apiCall('saveHistory', { history: savedHistory });
         openProfile(); 
         filterHistory();
@@ -828,6 +806,7 @@ function openProfile() {
         let todayHrs = Math.round(diff / 3600);
 
         rcpBlockHtml = 
+        "<div class='dash-section-title' style='text-align:center; margin-bottom:10px; width: 100%; box-sizing:border-box;'>" + t.rcp.closeTitle + "</div>" +
         "<div class='chart-container' style='margin: 0 auto 10px; width: 220px; height: 220px;'>" +
             "<svg class='chart-svg' viewBox='0 0 200 200'><circle class='chart-bg' cx='100' cy='100' r='90' /><circle class='chart-fill' cx='100' cy='100' r='90' style='stroke:#58a6ff; stroke-dasharray:565; stroke-dashoffset:0;' /></svg>" +
             "<div class='chart-text' style='display:flex; flex-direction:column; align-items:center; width:100%;'>" +
@@ -955,7 +934,6 @@ function sendHelp() {
     if(!text.trim()) return;
     const t = tr[currentLang];
     
-    // API Call to Google Script
     apiCall('sendHelp', { message: text });
     
     if(tgApp && tgApp.showAlert) tgApp.showAlert(t.helpSent); else alert(t.helpSent);
