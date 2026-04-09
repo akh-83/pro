@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Калькулятор Валют</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background: #000; display: flex; justify-content: center; height: 100vh; color: #fff; }
+    .app { width: 100%; max-width: 400px; background: #222; display: flex; flex-direction: column; height: 100%; }
+    .displays { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 20px 30px; gap: 30px; }
+    .row { display: flex; justify-content: space-between; align-items: center; }
+    .selector { position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+    .selector select { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+    .flag { width: 32px; height: 32px; border-radius: 50%; background-size: cover; background-position: center; margin-bottom: 5px; }
+    .cur-code { font-size: 14px; color: #ccc; }
+    .amount { font-size: 42px; text-align: right; outline: none; border: none; background: transparent; color: #fff; width: 100%; }
+    .amount.secondary { font-size: 32px; color: #e0e0e0; }
+    
+    .keypad { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 80px; gap: 1px; background: #111; }
+    .btn { background: #555; border: none; font-size: 28px; color: #fff; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+    .btn:active { background: #666; }
+    .btn.dark { background: #444; }
+    .btn.dark:active { background: #555; }
+    .btn.orange { background: #ff9800; }
+    .btn.orange:active { background: #ffb74d; }
+    
+    .footer { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: #222; font-size: 12px; }
+    .footer-icon { font-size: 20px; cursor: pointer; }
+    .rate-info { text-align: center; }
+    .date-time { color: #4ade80; margin-bottom: 3px; font-size: 14px; }
+    .rate-text { color: #888; }
+</style>
+</head>
+<body>
+
+<div class="app">
+    <div class="displays">
+        <div class="row">
+            <div class="selector">
+                <div class="flag" id="flag1" style="background-image: url('https://flagcdn.com/w80/pl.png');"></div>
+                <div class="cur-code" id="code1">PLN</div>
+                <select id="sel1" onchange="changeCurrency(1)"></select>
+            </div>
+            <div class="amount" id="val1">10</div>
+        </div>
+        <div class="row">
+            <div class="selector">
+                <div class="flag" id="flag2" style="background-image: url('https://flagcdn.com/w80/us.png');"></div>
+                <div class="cur-code" id="code2">USD</div>
+                <select id="sel2" onchange="changeCurrency(2)"></select>
+            </div>
+            <div class="amount secondary" id="val2">0</div>
+        </div>
+    </div>
+
+    <div class="keypad">
+        <button class="btn dark" onclick="press('C')">C</button>
+        <button class="btn dark" onclick="press('BACK')">←</button>
+        <button class="btn dark" onclick="swap()">↑↓</button>
+        <button class="btn orange" onclick="press('/')">÷</button>
+        
+        <button class="btn" onclick="press('7')">7</button>
+        <button class="btn" onclick="press('8')">8</button>
+        <button class="btn" onclick="press('9')">9</button>
+        <button class="btn orange" onclick="press('*')">×</button>
+        
+        <button class="btn" onclick="press('4')">4</button>
+        <button class="btn" onclick="press('5')">5</button>
+        <button class="btn" onclick="press('6')">6</button>
+        <button class="btn orange" onclick="press('-')">-</button>
+        
+        <button class="btn" onclick="press('1')">1</button>
+        <button class="btn" onclick="press('2')">2</button>
+        <button class="btn" onclick="press('3')">3</button>
+        <button class="btn orange" onclick="press('+')">+</button>
+        
+        <button class="btn" onclick="press('0')">0</button>
+        <button class="btn" onclick="press('.')">,</button>
+        <button class="btn dark" onclick="press('%')">%</button>
+        <button class="btn orange" onclick="calc()">=</button>
+    </div>
+
+    <div class="footer">
+        <div class="footer-icon" onclick="fetchRates()">↻</div>
+        <div class="rate-info">
+            <div class="date-time" id="datetime">--.--.----, --:--</div>
+            <div class="rate-text" id="ratetext">Обновление...</div>
+        </div>
+        <div class="footer-icon">⚇</div>
+    </div>
+</div>
+
+<script>
+    const currencies = {
+        'RUB': 'ru', 'USD': 'us', 'EUR': 'eu', 'GBP': 'gb', 'CHF': 'ch', 
+        'PLN': 'pl', 'SEK': 'se', 'NOK': 'no', 'DKK': 'dk', 'CZK': 'cz',
+        'HUF': 'hu', 'RON': 'ro', 'BGN': 'bg', 'RSD': 'rs', 'TRY': 'tr', 'UAH': 'ua'
+    };
+
+    let expression = "10";
+    let rates = {};
+    let c1 = 'PLN', c2 = 'USD';
+
+    function init() {
+        const s1 = document.getElementById('sel1');
+        const s2 = document.getElementById('sel2');
+        for(let c in currencies) {
+            s1.innerHTML += `<option value="${c}" ${c==c1?'selected':''}>${c}</option>`;
+            s2.innerHTML += `<option value="${c}" ${c==c2?'selected':''}>${c}</option>`;
+        }
+        updateTime();
+        setInterval(updateTime, 60000);
+        fetchRates();
+    }
+
+    function updateTime() {
+        const now = new Date();
+        const d = String(now.getDate()).padStart(2, '0');
+        const m = String(now.getMonth()+1).padStart(2, '0');
+        const y = now.getFullYear();
+        const h = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        document.getElementById('datetime').innerText = `${d}.${m}.${y}, ${h}:${min}`;
+    }
+
+    async function fetchRates() {
+        try {
+            const res = await fetch(`https://api.exchangerate-api.com/v4/latest/${c1}`);
+            const data = await res.json();
+            rates = data.rates;
+            updateDisplay();
+        } catch (e) {}
+    }
+
+    function changeCurrency(num) {
+        if(num === 1) {
+            c1 = document.getElementById('sel1').value;
+            document.getElementById('code1').innerText = c1;
+            document.getElementById('flag1').style.backgroundImage = `url('https://flagcdn.com/w80/${currencies[c1]}.png')`;
+            fetchRates();
+        } else {
+            c2 = document.getElementById('sel2').value;
+            document.getElementById('code2').innerText = c2;
+            document.getElementById('flag2').style.backgroundImage = `url('https://flagcdn.com/w80/${currencies[c2]}.png')`;
+            updateDisplay();
+        }
+    }
+
+    function swap() {
+        let temp = c1; c1 = c2; c2 = temp;
+        document.getElementById('sel1').value = c1;
+        document.getElementById('sel2').value = c2;
+        changeCurrency(1);
+        changeCurrency(2);
+    }
+
+    function formatNumber(num) {
+        return Number(num).toLocaleString('ru-RU', {maximumFractionDigits: 4}).replace(',', '.');
+    }
+
+    function press(key) {
+        if(key === 'C') expression = "0";
+        else if(key === 'BACK') expression = expression.length > 1 ? expression.slice(0, -1) : "0";
+        else if(key === '%') {
+            try { expression = String(eval(expression) / 100); } catch(e){}
+        }
+        else {
+            if(expression === "0" && key !== '.') expression = key;
+            else expression += key;
+        }
+        document.getElementById('val1').innerText = expression.replace(/([+\-*/])/g, ' $1 ');
+        updateDisplay(false);
+    }
+
+    function calc() {
+        try {
+            expression = String(eval(expression));
+            updateDisplay(true);
+        } catch(e) {
+            expression = "0";
+            updateDisplay(true);
+        }
+    }
+
+    function updateDisplay(formatTop = true) {
+        if(formatTop && !isNaN(expression)) {
+            document.getElementById('val1').innerText = formatNumber(expression).replace(/\./g, ',');
+        }
+        if(rates[c2]) {
+            let baseVal = 0;
+            try { baseVal = eval(expression); } catch(e) {}
+            let res = baseVal * rates[c2];
+            document.getElementById('val2').innerText = formatNumber(res).replace(/\./g, ',');
+            document.getElementById('ratetext').innerText = `1 ${c1} = ${formatNumber(rates[c2])} ${c2}`;
+        }
+    }
+
+    init();
+</script>
+</body>
+</html>
