@@ -1,41 +1,176 @@
-// === 1. ВСТАВЛЯЕШЬ В САМЫЙ ВЕРХ ФАЙЛА (Настройки Supabase) ===
 const SUPABASE_URL = 'https://apnmlbvefruhagufmpfc.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_QE6JAl1XxmOR_0cjGXEJ3g_GvOII0fY';
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const ADMIN_ID = '8543137368';
 
-
-// === 2. ТВОИ ПЕРЕВОДЫ — НЕ ТРОГАЕШЬ! ОСТАВЛЯЕШЬ КАК БЫЛО ===
-const tr = {
-    ru: { ... },
-    en: { ... },
-    // ... и так далее
-};
-
-
-// === 3. ТВОИ БАЗОВЫЕ ПЕРЕМЕННЫЕ — НЕ ТРОГАЕШЬ! ===
 var tgApp = window.Telegram ? window.Telegram.WebApp : null;
 var isCloudStorageSupported = tgApp && tgApp.isVersionAtLeast && tgApp.isVersionAtLeast('6.9');
 var isAdmin = false;
 var viewingWorkerId = null; 
 var currentWorkerId = localStorage.getItem('kkn_worker_id') || null;
 var adminUsersList = [];
+
 var dbFirstName = "";
 var dbLastName = "";
 
+// Проверка на админа
 if (tgApp && tgApp.initDataUnsafe && tgApp.initDataUnsafe.user) {
     if (tgApp.initDataUnsafe.user.id == ADMIN_ID) isAdmin = true;
 }
 
-
-// === 4. А ВОТ ЗДЕСЬ УДАЛЯЕШЬ СТАРЫЙ apiCall И ВСТАВЛЯЕШЬ НОВЫЙ ===
+// === ДВИЖОК SUPABASE ===
 async function apiCall(action, payload = {}) {
-    const uid = tgApp?.initDataUnsafe?.user?.id || 'local';
+    const tgUser = tgApp?.initDataUnsafe?.user;
+    const uid = tgUser?.id || 'local';
     const wid = viewingWorkerId || currentWorkerId || 'unknown';
 
     try {
-        // ... весь тот большой кусок кода с запросами к Supabase, который я скинул в прошлом сообщении ...
+        if (action === 'getUserData') {
+            const targetUid = payload.user_id || uid;
+            const { data } = await supabase.from('workers').select('*').eq('tg_id', targetUid.toString()).maybeSingle();
+            const { count } = await supabase.from('workers').select('*', { count: 'exact', head: true });
+            
+            if (data) {
+                return { status: 'success', worker_id: data.worker_id, first_name: data.first_name, last_name: data.last_name, total_users: count || 0 };
+            }
+            return { status: 'success', worker_id: null, total_users: count || 0 };
+        }
+
+        if (action === 'registerUser') {
+            const workerId = payload.worker_id;
+            const { data: exist } = await supabase.from('workers').select('*').eq('worker_id', workerId).maybeSingle();
+            
+            // Автоматически берем имя и фамилию из Телеграма!
+            const tgFirstName = tgUser?.first_name || '';
+            const tgLastName = tgUser?.last_name || '';
+
+            if (exist) {
+                await supabase.from('workers').update({ 
+                    tg_id: uid.toString(),
+                    first_name: exist.first_name || tgFirstName,
+                    last_name: exist.last_name || tgLastName
+                }).eq('worker_id', workerId);
+            } else {
+                await supabase.from('workers').insert([{ 
+                    tg_id: uid.toString(), 
+                    worker_id: workerId,
+                    first_name: tgFirstName,
+                    last_name: tgLastName
+                }]);
+            }
+            const { count } = await supabase.from('workers').select('*', { count: 'exact', head: true });
+            return { status: 'success', total_users: count || 0 };
+        }
+
+        if (action === 'updateProfile') {
+            const { old_worker_id, new_worker_id, first_name, last_name } = payload;
+            await supabase.from('workers').update({ worker_id: new_worker_id, first_name: first_name, last_name: last_name }).eq('worker_id', old_worker_id);
+            return { status: 'success' };
+        }
+
+        if (action === 'getData') {
+            const targetWid = payload.worker_id || wid;
+            if (targetWid === 'unknown') return { status: 'success', history: [], rcpHistory: [], rcpState: null };
+
+            const { data: uData } = await supabase.from('workers').select('*').eq('worker_id', targetWid).maybeSingle();
+            
+            // Если мужик есть в локальной памяти, но нет в базе — восстанавливаем
+            if (!uData && !viewingWorkerId) {
+                const tgFirstName = tgUser?.first_name || '';
+                const tgLastName = tgUser?.last_name || '';
+                await supabase.from('workers').insert([{ 
+                    tg_id: uid.toString(), 
+                    worker_id: targetWid,
+                    first_name: tgFirstName,
+                    last_name: tgLastName
+                }]);
+            }
+
+            const { data: hData } = await supabase.from('time_history').select('*').eq('worker_id', targetWid);
+            const { data: pData } = await supabase.from('pro_history').select('*').eq('worker_id', targetWid);
+            const { count } = await supabase.from('workers').select('*', { count: 'exact', head: true });
+
+            let rcpHist = [];
+            let rcpSt = null;
+            let hist = [];
+
+            if (hData) {
+                hData.forEach(r => {
+                    if (!r.end_time || r.end_time === "") {
+                        rcpSt = { dateStr: r.date_str, start: r.start_time, end: null, timestamp: Date.now() };
+                    } else {
+                        rcpHist.push({ dateStr: r.date_str, start: r.start_time, end: r.end_time, durationSec: (r.total_hours * 3600), timestamp: Date.now() });
+                    }
+                });
+            }
+
+            if (pData) {
+                pData.forEach(r => {
+                    hist.push({
+                        dateStr: r.date_str, pro: r.pro_n, pos: r.pos_num, qty: r.qty,
+                        start: r.start_time, end: r.end_time, stan: r.stan, uwagi: r.uwagi, result: parseFloat(r.result_percent) || 0
+                    });
+                });
+            }
+
+            return {
+                status: 'success',
+                history: hist, rcpHistory: rcpHist, rcpState: rcpSt,
+                first_name: uData ? uData.first_name : (tgUser?.first_name || ""), 
+                last_name: uData ? uData.last_name : (tgUser?.last_name || ""),
+                total_users: count || 0
+            };
+        }
+
+        if (action === 'saveRCP') {
+            const targetWid = payload.worker_id || wid;
+            await supabase.from('time_history').delete().eq('worker_id', targetWid);
+            
+            let toInsert = [];
+            if (payload.history) payload.history.forEach(r => {
+                toInsert.push({ worker_id: targetWid, date_str: r.dateStr, start_time: r.start, end_time: r.end, total_hours: Math.round(r.durationSec / 3600) });
+            });
+            if (payload.state) {
+                toInsert.push({ worker_id: targetWid, date_str: payload.state.dateStr, start_time: payload.state.start, end_time: "", total_hours: null });
+            }
+            if (toInsert.length > 0) await supabase.from('time_history').insert(toInsert);
+            return { status: 'success' };
+        }
+
+        if (action === 'saveHistory') {
+            const targetWid = payload.worker_id || wid;
+            await supabase.from('pro_history').delete().eq('worker_id', targetWid);
+            
+            let toInsert = [];
+            if (payload.history) payload.history.forEach(r => {
+                toInsert.push({
+                    worker_id: targetWid, date_str: r.dateStr, pro_n: r.pro, pos_num: r.pos || r.wTypeKey,
+                    qty: r.qty, start_time: r.start, end_time: r.end, stan: r.stan, uwagi: r.uwagi, result_percent: r.result
+                });
+            });
+            if (toInsert.length > 0) await supabase.from('pro_history').insert(toInsert);
+            return { status: 'success' };
+        }
+
+        if (action === 'getAllUsers') {
+            const { data } = await supabase.from('workers').select('*');
+            let usersArr = data ? data.map(u => ({ tg_id: u.tg_id, worker_id: u.worker_id, first_name: u.first_name, last_name: u.last_name })) : [];
+            return { status: 'success', users: usersArr };
+        }
+
+        if (action === 'deleteAllUsers') {
+            await supabase.from('workers').delete().neq('id', 0);
+            return { status: 'success' };
+        }
+
+        if (action === 'deleteUser') {
+            await supabase.from('workers').delete().eq('worker_id', payload.target_worker_id);
+            return { status: 'success' };
+        }
+
+        if (action === 'sendHelp') return { status: 'success' };
+
     } catch(e) {
         console.error("Supabase Error:", e);
         return { status: 'error', message: e.toString() };
@@ -43,9 +178,7 @@ async function apiCall(action, payload = {}) {
     return { status: 'success' };
 }
 
-// === 5. ВЕСЬ ОСТАЛЬНОЙ ТВОЙ КОД (sortSavedHistory, updateDashboards и т.д.) ===
-// НЕ ТРОГАЕШЬ!
-
+// === ОСТАЛЬНОЙ КОД ПРИЛОЖЕНИЯ ===
 const tr = {
   'Pyc': {
     months: ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'],
@@ -190,34 +323,6 @@ function updateHeader() {
     
     if (isAdmin && viewingWorkerId) nameToDisplay = "Worker № " + viewingWorkerId;
     document.getElementById('profileName').textContent = nameToDisplay;
-}
-
-async function apiCall(action, payload = {}) {
-    const uid = tgApp?.initDataUnsafe?.user?.id || 'local';
-    const wid = viewingWorkerId || currentWorkerId || 'unknown';
-
-    const data = {
-        action: action,
-        admin_id: ADMIN_ID,
-        sheet_id: SHEET_ID,
-        user_id: uid,
-        worker_id: wid,
-        ...payload
-    };
-
-    try {
-        const response = await fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'text/plain;charset=utf-8',
-            },
-            body: JSON.stringify(data)
-        });
-        return await response.json();
-    } catch (e) {
-        console.log('API not configured or error:', e);
-        return null;
-    }
 }
 
 function sortSavedHistory() {
