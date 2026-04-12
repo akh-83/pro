@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Калькулятор успеваемости</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <div class="top-header">
+    <div class="users-badge" id="globalUserCount">users: 0</div>
+    <div id="profileName">Пользователь</div>
+  </div>
+
+  <div id="main-app">
+    <!-- Вкладка: Профиль -->
+    <div id="tab-profile" class="main-tab-content active">
+      <div class="profile-dashboard" id="profileHistoryContent">
+        <div style="text-align:center; color:#8b949e; margin-top:50px;">Загрузка данных...</div>
+      </div>
+    </div>
+
+    <!-- Вкладка: История -->
+    <div id="tab-history" class="main-tab-content">
+      <div class="history-card">
+        <h2 id="t_hist_title">История нормы</h2>
+        <div style="display:flex; gap:10px; margin-bottom:15px;">
+          <input type="text" id="proSearchInput" class="time-field" style="margin:0; flex:1; padding:10px;" placeholder="Поиск PRO">
+          <button id="b_search" class="btn btn-info" style="padding:10px;">Поиск</button>
+        </div>
+        <div id="searchMatchCount" style="color:#58a6ff; font-size:12px; margin-bottom:10px; display:none;"></div>
+        <div id="historyCardsContainer"></div>
+      </div>
+    </div>
+
+    <!-- Вкладка: Калькулятор -->
+    <div id="tab-calc" class="main-tab-content">
+      <div class="calculator">
+        <div class="label" id="l_qty">Количество штук</div>
+        <input type="number" id="quantity" class="time-field" placeholder="0">
+        
+        <div class="label" id="l_tpi">Время на 1 штуку</div>
+        <div id="timePerItem" class="time-field" onclick="openPicker('timePerItem', false)">00:00:30</div>
+        
+        <div class="prep-card" id="prepToggle" onclick="togglePrep()">
+          <div>
+            <div class="label" id="l_prep">Подготовка</div>
+            <div class="label" id="l_prepSub" style="font-size:11px; margin-top:2px;">15 минут к норме</div>
+          </div>
+          <div class="radio-circle"><div class="radio-dot" id="radioDot"></div></div>
+        </div>
+        <div id="statusLabel" style="text-align:center; color:#8b949e; margin-bottom:15px; font-weight:bold;">НЕ АКТИВНО</div>
+
+        <div class="label" id="l_start">Начало</div>
+        <div id="startTime" class="time-field" onclick="openPicker('startTime', true)">08:00</div>
+        
+        <div class="label" id="l_end">Окончание</div>
+        <div id="endTime" class="time-field" onclick="openPicker('endTime', true)">00:00</div>
+
+        <div class="btn-group" style="margin-bottom:15px;">
+          <button id="b_calc" class="btn btn-calc" onclick="calculate()">Рассчитать</button>
+          <button id="p_cancel" class="btn btn-info" onclick="document.getElementById('quantity').value=''; document.getElementById('endTime').textContent='00:00:00'; document.getElementById('result').innerHTML='';">Отмена</button>
+        </div>
+        <div id="result"></div>
+      </div>
+    </div>
+
+    <!-- Вкладка: RCP -->
+    <div id="tab-rcp" class="main-tab-content">
+      <h2 id="t_rcp_title" style="color:#fff; text-align:center; margin-bottom:15px;">Рабочее время (RCP)</h2>
+      <div id="rcpTabHours"></div>
+      <div id="rcpTabCalendar" style="width:94%; max-width:400px;"></div>
+      <div id="rcpTabCards" style="width:94%; max-width:400px;"></div>
+    </div>
+
+    <!-- Вкладка: Инструкция -->
+    <div id="tab-instruction" class="main-tab-content">
+      <div class="history-card" style="text-align:left;">
+        <h2 id="i_title_info" style="margin-bottom:15px;">Инструкция</h2>
+        <div id="instructionContentNorm"></div>
+        <button id="btn_help" class="btn btn-info" style="width:100%; margin-top:20px;" onclick="openModal('helpOverlay')">Помощь</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Навигация -->
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="switchMainTab('tab-profile', this)">
+      <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+    </div>
+    <div class="nav-item" onclick="switchMainTab('tab-history', this)">
+      <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+    </div>
+    <div class="nav-item btn-plus" onclick="switchMainTab('tab-calc', this)">
+      <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+    </div>
+    <div class="nav-item" onclick="switchMainTab('tab-rcp', this)">
+      <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 10H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/></svg>
+    </div>
+    <div class="nav-item" onclick="switchMainTab('tab-instruction', this)">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>
+    </div>
+  </div>
+
+  <!-- Оверлеи и модальные окна -->
+  <div id="authOverlay" class="picker-overlay" style="display:none; background:rgba(0,0,0,0.9);">
+    <div class="picker-container" style="text-align:center;">
+      <h2 id="a_title">Авторизация</h2>
+      <p id="a_desc" style="color:#8b949e; margin-bottom:15px;">Введите ваш рабочий номер</p>
+      <input type="text" id="authWorkerInput" class="time-field" placeholder="12345" style="margin-bottom:15px;">
+      <button id="a_btn" class="btn btn-calc" onclick="saveWorkerId()" style="width:100%;">Войти</button>
+    </div>
+  </div>
+
+  <div id="rcpOverlay" class="picker-overlay" style="display:none; background:rgba(0,0,0,0.9);">
+    <div class="picker-container" style="text-align:center;">
+      <h2 id="rcp_title">Регистрация RCP</h2>
+      <p id="rcp_desc" style="color:#8b949e; margin-bottom:10px;">Укажите время начала работы</p>
+      <div id="rcpTodayDate" style="font-size:24px; font-weight:bold; margin-bottom:15px;"></div>
+      <div id="rcpStartTime" style="font-size:20px; margin-bottom:20px;"></div>
+      <button id="rcp_btn_start" class="btn btn-calc" onclick="confirmRCPStart()" style="width:100%;">Подтвердить</button>
+      <button id="rcp_btn_skip" class="btn btn-info" style="width:100%; margin-top:10px;" onclick="document.getElementById('rcpOverlay').style.display='none';">Пропустить</button>
+    </div>
+  </div>
+
+  <div id="pickerOverlay" class="picker-overlay">
+    <div class="picker-container">
+      <h3 id="p_title" style="text-align:center; margin:0 0 15px;">Время</h3>
+      <div class="picker-wheels">
+        <div class="picker-highlight"></div>
+        <div id="hWheel" class="wheel"></div>
+        <div id="mWheel" class="wheel"></div>
+        <div id="sWheel" class="wheel"></div>
+      </div>
+      <div class="btn-group" style="margin-top:15px;">
+        <button id="p_cancel" class="btn btn-info" onclick="closePicker()">Отмена</button>
+        <button id="p_done" class="btn btn-calc" onclick="confirmPicker()">Готово</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="saveModalOverlay" class="picker-overlay">
+    <div class="picker-container" style="max-width:380px; max-height:85vh; overflow-y:auto;">
+      <h2 id="s_title" style="text-align:center; margin-bottom:15px;">Сохранение результата</h2>
+      <div style="margin-bottom:10px;"><label id="s_date" class="label">Дата</label><input type="text" id="saveDate" class="time-field"></div>
+      <div style="margin-bottom:10px;"><label id="s_pro" class="label">PRO (цифры и -)</label><input type="text" id="savePro" class="time-field"></div>
+      <div style="margin-bottom:10px;"><label id="s_stan" class="label">Номер Stanowiska</label><input type="text" id="saveStanowisko" class="time-field"></div>
+      <div style="margin-bottom:10px;">
+        <label id="s_type" class="label">Вид работы</label>
+        <select id="saveWorkType" class="time-field" style="cursor:pointer;">
+          <option value="t1">Сварка ручная</option>
+          <option value="t2">Сварка на обротнице</option>
+          <option value="t3">Поправка</option>
+        </select>
+      </div>
+      <div style="margin-bottom:10px;"><label id="s_uwagi" class="label">Uwagi (заметки)</label><input type="text" id="saveUwagi" class="time-field"></div>
+      <div style="display:flex; gap:10px; margin-bottom:10px;">
+        <div style="flex:1;"><label id="s_qty_lbl" class="label">Количество штук</label><input type="number" id="saveQty" class="time-field"></div>
+      </div>
+      <div style="display:flex; gap:10px; margin-bottom:10px;">
+        <div style="flex:1;"><label id="s_start_lbl" class="label">Начало</label><div id="saveStart" class="time-field" onclick="openPicker('saveStart', true)">08:00</div></div>
+        <div style="flex:1;"><label id="s_end_lbl" class="label">Окончание</label><div id="saveEnd" class="time-field" onclick="openPicker('saveEnd', false)">16:00:00</div></div>
+      </div>
+      <div class="prep-card" id="savePrepToggle" onclick="toggleSavePrep()" style="margin-bottom:15px;">
+        <div><label id="s_prep_lbl" class="label">Подготовка 15 мин</label></div>
+        <div class="radio-circle"><div class="radio-dot" id="saveRadioDot"></div></div>
+      </div>
+      <div class="btn-group">
+        <button id="s_btn_cancel" class="btn btn-info" onclick="closeModal('saveModalOverlay')">Отмена</button>
+        <button id="s_btn_save" class="btn btn-calc" onclick="confirmSave()">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="rcpEditModalOverlay" class="picker-overlay">
+    <div class="picker-container" style="text-align:center;">
+      <h2 id="re_title" style="margin-bottom:15px;">Редактирование RCP</h2>
+      <div id="re_date" style="font-size:20px; font-weight:bold; margin-bottom:20px; color:#58a6ff;"></div>
+      <div style="display:flex; gap:15px; margin-bottom:20px;">
+        <div style="flex:1;"><label id="re_l_start" class="label">Начало</label><div id="re_start" class="time-field" onclick="openPicker('re_start', true)">08:00</div></div>
+        <div style="flex:1;"><label id="re_l_end" class="label">Окончание</label><div id="re_end" class="time-field" onclick="openPicker('re_end', false)">16:00</div></div>
+      </div>
+      <button id="re_btn_del" class="btn btn-info" style="width:100%; background:#f06767; border-color:#f06767; margin-bottom:10px; display:none;" onclick="deleteRcpEdit()">Удалить</button>
+      <div class="btn-group">
+        <button id="re_btn_cancel" class="btn btn-info" onclick="closeModal('rcpEditModalOverlay')">Отмена</button>
+        <button id="re_btn_save" class="btn btn-calc" onclick="saveRcpEdit()">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="profileSettingsModalOverlay" class="picker-overlay">
+    <div class="picker-container" style="text-align:center;">
+      <h2 id="ps_title" style="margin-bottom:15px;">Настройки профиля</h2>
+      <div style="margin-bottom:10px;"><label id="ps_l_worker" class="label">Рабочий номер</label><input type="text" id="psWorkerInput" class="time-field"></div>
+      <div style="margin-bottom:10px;"><label id="ps_l_fname" class="label">Имя</label><input type="text" id="psFirstNameInput" class="time-field"></div>
+      <div style="margin-bottom:15px;"><label id="ps_l_lname" class="label">Фамилия</label><input type="text" id="psLastNameInput" class="time-field"></div>
+      <div class="btn-group">
+        <button id="ps_btn_cancel" class="btn btn-info" onclick="closeModal('profileSettingsModalOverlay')">Отмена</button>
+        <button id="ps_btn_save" class="btn btn-calc" onclick="saveProfileSettings()">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="helpOverlay" class="picker-overlay">
+    <div class="picker-container" style="text-align:center;">
+      <h2 id="h_title" style="margin-bottom:15px;">Помощь</h2>
+      <textarea id="helpTextInput" class="time-field" rows="4" style="margin-bottom:15px; resize:none;"></textarea>
+      <div class="btn-group">
+        <button id="h_btn_cancel" class="btn btn-info" onclick="closeModal('helpOverlay')">Отмена</button>
+        <button id="h_btn_send" class="btn btn-calc" onclick="closeModal('helpOverlay'); alert('Сообщение отправлено!');">Отправить</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
