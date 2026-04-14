@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Smart House Scanner</title>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        :root {
+            /* Цветовая палитра */
+            --bg-body: #151f2e;
+            --bg-panel: #1f2d40;
+            --bg-panel-light: #2a3b52;
+            --text-main: #ffffff;
+            --text-muted: #8fa0b5;
+            --accent-cyan: #00d2ff;
+            --accent-green: #2ecc71;
+            --accent-blue: #3498db;
+            --accent-red: #ff3b30;
+            --border-color: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Сетка дашборда */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        /* Стили карточки (блока) */
+        .panel {
+            background-color: var(--bg-panel);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            font-size: 14px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Блок сканера */
+        .scanner-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* Поле ввода */
+        .input-group {
+            position: relative;
+            background: var(--bg-panel-light);
+            border-radius: 6px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            border: 1px solid transparent;
+            transition: border 0.3s;
+        }
+
+        .input-group:focus-within {
+            border-color: var(--accent-cyan);
+        }
+
+        .scan-input {
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            font-size: 24px;
+            width: 100%;
+            font-weight: 300;
+            outline: none;
+            text-align: left;
+            transition: color 0.3s;
+        }
+
+        .scan-input::placeholder {
+            color: var(--text-muted);
+            font-size: 16px;
+        }
+
+        .unit-label {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-left: 10px;
+        }
+
+        /* Кнопка сканирования */
+        .scan-btn {
+            background-color: var(--accent-cyan);
+            color: #151f2e;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 14px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .scan-btn:hover {
+            background-color: #33ddff;
+            transform: translateY(-1px);
+        }
+
+        .scan-btn:active {
+            transform: translateY(1px);
+        }
+
+        /* Иконка сканера SVG */
+        .icon-scan {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        /* =========================================
+           СТИЛИ МОДАЛЬНОГО ОКНА И ОБЛАСТИ СКАНЕРА
+           ========================================= */
+        #camera-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            z-index: 2000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #reader {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            overflow: hidden;
+            background: #111;
+        }
+
+        /* Декоративная рамка сканирования */
+        .scan-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 3;
+            width: 85vw;
+            height: 140px; /* Прямоугольная форма для широких кодов */
+            border: 2px solid var(--accent-cyan);
+            border-radius: 8px;
+            background: rgba(0, 210, 255, 0.1);
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .scan-box.success {
+            border-color: var(--accent-green);
+            background: rgba(46, 204, 113, 0.2);
+            box-shadow: 0 0 20px rgba(46, 204, 113, 0.5);
+        }
+
+        .scan-hint {
+            color: #fff;
+            font-size: 13px;
+            font-weight: bold;
+            text-transform: uppercase;
+            background: rgba(0,0,0,0.6);
+            padding: 4px 8px;
+            border-radius: 4px;
+            pointer-events: none;
+        }
+
+        /* Бегущая полоска */
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--accent-red);
+            box-shadow: 0 0 6px var(--accent-red);
+            animation: scanMove 2s linear infinite;
+            z-index: 4;
+        }
+
+        @keyframes scanMove {
+            0% { top: 0%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+
+        .close-btn-container {
+            position: absolute;
+            bottom: 40px;
+            z-index: 10;
+            width: 100%;
+            text-align: center;
+        }
+
+        .close-camera-btn {
+            background: rgba(40, 50, 70, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 12px 40px;
+            border-radius: 30px;
+            font-size: 16px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+        }
+
+        .close-camera-btn:hover {
+            border-color: var(--text-main);
+        }
+
+        /* Скрываем нативный UI библиотеки */
+        #reader__dashboard_section_csr, #reader__dashboard_section_swap, #reader__dashboard_section_file {
+            display: none !important;
+        }
+        #reader__scan_region {
+            border: none !important;
+            background: transparent !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-grid">
+        
+        <div class="panel">
+            <div class="panel-header">
+                <span>Indoor Climate</span>
+                <span style="color: var(--accent-cyan)">●</span>
+            </div>
+            <div style="font-size: 42px; font-weight: 300;">22.30 <span style="font-size: 20px;">°C</span></div>
+            <div style="color: var(--text-muted); font-size: 14px; margin-top: 10px;">
+                Humidity: 44%
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <span>Product Scanner</span>
+                <svg class="icon-scan" viewBox="0 0 24 24">
+                    <path d="M2 6h2v12H2V6zm4 0h2v12H6V6zm4 0h2v12h-2V6zm4 0h2v12h-2V6zm4 0h2v12h-2V6z"/>
+                </svg>
+            </div>
+            
+            <div class="scanner-container">
+                <div class="input-group">
+                    <input type="text" id="barcode-input" class="scan-input" placeholder="0000 0000" readonly>
+                    <span class="unit-label">CODE</span>
+                </div>
+
+                <button class="scan-btn" onclick="startScanner()">
+                    <svg class="icon-scan" viewBox="0 0 24 24">
+                        <path d="M9.5 3.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5V5h2V3.5C14.5 1.57 12.93 0 11 0S7.5 1.57 7.5 3.5V5h2V3.5zM5 7.5C5 5.57 6.57 4 8.5 4H10V2H8.5C5.46 2 3 4.46 3 7.5V9h2V7.5zm14 0c0 1.93-1.57 3.5-3.5 3.5H14v2h1.5c3.04 0 5.5-2.46 5.5-5.5V9h-2v-1.5zM11 22c1.93 0 3.5-1.57 3.5-3.5V17h-2v1.5c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5V17H7.5v1.5c0 1.93 1.57 3.5 3.5 3.5z"/>
+                        <path d="M7 9h10v6H7z" opacity=".3"/>
+                    </svg>
+                    Сканировать
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="camera-modal">
+        <div id="reader"></div>
+        
+        <div class="scan-box" id="scan-box">
+            <div class="scan-line"></div>
+            <span class="scan-hint">Наведите на код</span>
+        </div>
+
+        <div class="close-btn-container">
+            <button class="close-camera-btn" onclick="stopScanner()">Закрыть камеру</button>
+        </div>
+    </div>
+
+    <script>
+        let html5QrcodeScanner;
+        const inputField = document.getElementById('barcode-input');
+        const modal = document.getElementById('camera-modal');
+        const scanBox = document.getElementById('scan-box');
+        const readerDiv = document.getElementById('reader');
+
+        function startScanner() {
+            modal.style.display = 'flex';
+            scanBox.classList.remove('success');
+            readerDiv.innerHTML = "";
+            
+            // Ждем отрисовки модального окна перед запуском камеры
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    initCamera();
+                });
+            });
+        }
+
+        function initCamera() {
+            // Указываем нужные форматы для ускорения работы и точности
+            const formatsToSupport = [ 
+                Html5QrcodeScanFormat.CODE_128,
+                Html5QrcodeScanFormat.CODE_39,
+                Html5QrcodeScanFormat.CODE_39_93,
+                Html5QrcodeScanFormat.EAN_13,
+                Html5QrcodeScanFormat.EAN_8,
+                Html5QrcodeScanFormat.UPC_A,
+                Html5QrcodeScanFormat.UPC_E,
+                Html5QrcodeScanFormat.ITF_14,
+                Html5QrcodeScanFormat.CODABAR
+            ];
+
+            html5QrcodeScanner = new Html5Qrcode("reader", { formatsToSupport: formatsToSupport });
+
+            const config = { 
+                fps: 10, 
+                // Динамический расчет прямоугольника (важно для широких кодов)
+                qrbox: function(viewfinderWidth, viewfinderHeight) {
+                    const safeWidth = Math.min(window.innerWidth * 0.85, viewfinderWidth - 20);
+                    return { width: safeWidth, height: 140 }; // Высота 140px как у декоративной рамки
+                }
+            };
+
+            html5QrcodeScanner.start(
+                { facingMode: "environment" }, 
+                config, 
+                onScanSuccess,
+                undefined // Игнорируем ошибки парсинга (они спамят в консоль пока код не найден)
+            ).catch(err => {
+                console.error("Ошибка запуска камеры", err);
+                alert("Не удалось включить камеру. Проверьте разрешения в браузере.");
+                stopScanner();
+            });
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            // 1. Кладем результат
+            inputField.value = decodedText;
+            
+            // 2. Визуальный эффект в камере (зеленая рамка)
+            scanBox.classList.add('success');
+            if (navigator.vibrate) navigator.vibrate(200);
+
+            // 3. Останавливаем с задержкой, чтобы юзер увидел зеленую рамку
+            setTimeout(() => {
+                stopScanner();
+                
+                // 4. Визуальный эффект в дашборде (текст зеленеет на полсекунды)
+                inputField.style.color = '#2ecc71';
+                setTimeout(() => {
+                    inputField.style.color = 'var(--text-main)';
+                }, 500);
+
+            }, 600);
+        }
+
+        function stopScanner() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().then(() => {
+                    html5QrcodeScanner.clear();
+                    modal.style.display = 'none';
+                }).catch(err => {
+                    modal.style.display = 'none';
+                });
+            } else {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
