@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>wad</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; }
+        body { background: #000; display: flex; justify-content: center; height: 100vh; color: #fff; overflow: hidden; }
+        .app { width: 100%; max-width: 400px; background: #1c1c1c; display: flex; flex-direction: column; height: 100%; }
+        
+        /* Рекламный блок (Iframe Proxy) */
+        .ad-banner-wrapper {
+            width: 100%;
+            max-width: 57px;
+            aspect-ratio: 6 / 5;
+            overflow: hidden;
+            position: relative;
+            background-color: #f4f4f4;
+            border-radius: 8px;
+            margin: 10px auto 5px auto;
+        }
+
+        .ad-banner-iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 1200px; 
+            height: 1000px;
+            transform: scale(0.25);
+            transform-origin: 0 0;
+            border: none;
+            pointer-events: none;
+        }
+
+        .displays { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 10px 25px; gap: 10px; }
+        .row { display: flex; justify-content: space-between; align-items: center; background: #262626; padding: 15px; border-radius: 15px; }
+        
+        .selector { position: relative; display: flex; flex-direction: column; align-items: center; min-width: 60px; }
+        .selector select { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 2; }
+        .flag { width: 36px; height: 36px; border-radius: 50%; background-size: cover; background-position: center; margin-bottom: 4px; border: 2px solid #3d3d3d; }
+        .currency-code { font-size: 16px; font-weight: 600; color: #fff; }
+        
+        .values { text-align: right; flex: 1; margin-left: 15px; overflow: hidden; }
+        .val { font-size: 32px; font-weight: 300; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        .val2 { color: #ffffff; font-size: 22px; margin-top: 2px; } 
+        .rate-info { font-size: 11px; color: #32d74b; margin-top: 4px; font-weight: bold; } 
+
+        /* Кнопка свапа валют */
+        .swap-box { text-align: center; margin: -18px 0; position: relative; z-index: 5; height: 26px; }
+        .swap-btn {
+            background: #333; color: #fff; border: 4px solid #1c1c1c; border-radius: 50%; 
+            width: 40px; height: 40px; cursor: pointer; font-size: 18px;
+            display: inline-flex; justify-content: center; align-items: center;
+            transform: translateY(-50%); transition: transform 0.1s, background 0.1s;
+        }
+        .swap-btn:active { transform: translateY(-50%) scale(0.9); background: #555; }
+
+        .keypad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 20px; background: #000; border-top: 1px solid #333; }
+        
+        .btn {
+            background: #333; color: #fff; border: none; border-radius: 50%;
+            font-size: 26px; height: 72px; cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            transition: transform 0.1s, background 0.1s;
+        }
+        .btn:active { transform: scale(0.92); background: #444; }
+        
+        .btn.action { background: #a5a5a5; color: #000; font-weight: 500; } 
+        .btn.action:active { background: #8e8e8e; }
+        .btn.operator { background: #ff9f0a; color: #fff; font-size: 32px; } 
+        .btn.operator:active { background: #cc7f08; }
+        .btn.zero { grid-column: span 2; border-radius: 40px; justify-content: flex-start; padding-left: 30px; }
+    </style>
+</head>
+<body>
+
+<div class="app">
+    
+<meta charset="UTF-8">
+<style>
+  .rb-banner{width:calc(100% - 20px);height:50px;margin:10px auto;background:linear-gradient(135deg,#667eea 0%,#764ba2 50%,#f093fb 100%);background-size:300% 300%;animation:rbGrad 4s ease infinite;border-radius:10px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;text-decoration:none;box-shadow:0 4px 15px rgba(102,126,234,.4)}.rb-banner:hover{box-shadow:0 6px 25px rgba(102,126,234,.6)}.rb-banner::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent);animation:rbShine 3s ease-in-out infinite}.rb-slides{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;z-index:1}.rb-slide{position:absolute;color:#fff;font-size:15px;font-weight:600;white-space:nowrap;opacity:0;transform:translateY(20px) scale(.95);filter:blur(4px);transition:all .6s cubic-bezier(.4,0,.2,1);display:flex;align-items:center;gap:10px;padding:0 10px}.rb-slide.active{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}.rb-btn{padding:3px 12px;background:rgba(255,255,255,.25);border-radius:12px;font-size:12px;font-weight:700;animation:rbPulse 2s ease-in-out infinite;border:1px solid rgba(255,255,255,.3);flex-shrink:0}@keyframes rbGrad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}@keyframes rbShine{0%{left:-100%}50%,100%{left:100%}}@keyframes rbPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}@media(max-width:768px){.rb-slide{font-size:13px;gap:6px}.rb-btn{font-size:10px;padding:2px 8px}}
+</style>
+
+<a href="https://t.me/skrawmet_bot" target="_blank" rel="noopener noreferrer" class="rb-banner">
+  <div class="rb-slides">
+    <div class="rb-slide active">КАЛЬКУЛЯТОР РАБОЧЕЙ НОРМЫ <span class="rb-btn">ПОДРОБНЕЕ ➺</span></div>
+    <div class="rb-slide">SkrawMet APP <span class="rb-btn">Start Bot ➺</span></div>
+  </div>
+</a>
+
+<script>(function(){const s=document.querySelectorAll('.rb-slide');let i=0;s[0]&&(s[0].classList.add('active'),setInterval(()=>{s[i].classList.remove('active');i=(i+1)%s.length;s[i].classList.add('active')},3e3))})();</script>
+<!-- REKLAMA BANNER END -->
+
+    <div class="displays">
+        <div class="row">
+            <div class="selector">
+                <div class="flag" id="flag1"></div>
+                <div class="currency-code" id="code1">EUR</div>
+                <select id="sel1" onchange="updateCurrency(1)"></select>
+            </div>
+            <div class="values">
+                <div class="val" id="val1">0</div>
+            </div>
+        </div>
+        
+        <div class="swap-box">
+            <button class="swap-btn" onclick="swapCurrencies()">⇅</button>
+        </div>
+
+        <div class="row">
+            <div class="selector">
+                <div class="flag" id="flag2"></div>
+                <div class="currency-code" id="code2">USD</div>
+                <select id="sel2" onchange="updateCurrency(2)"></select>
+            </div>
+            <div class="values">
+                <div class="val val2" id="val2">0</div>
+                <div class="rate-info" id="ratetext">Курс: 1 EUR = 1.08 USD</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="keypad">
+        <button class="btn action" onclick="press('C')">AC</button>
+        <button class="btn action" onclick="press('BACK')">⌫</button>
+        <button class="btn action" onclick="press('%')">%</button>
+        <button class="btn operator" onclick="press('/')">÷</button>
+        
+        <button class="btn" onclick="press('7')">7</button>
+        <button class="btn" onclick="press('8')">8</button>
+        <button class="btn" onclick="press('9')">9</button>
+        <button class="btn operator" onclick="press('*')">×</button>
+        
+        <button class="btn" onclick="press('4')">4</button>
+        <button class="btn" onclick="press('5')">5</button>
+        <button class="btn" onclick="press('6')">6</button>
+        <button class="btn operator" onclick="press('-')">−</button>
+        
+        <button class="btn" onclick="press('1')">1</button>
+        <button class="btn" onclick="press('2')">2</button>
+        <button class="btn" onclick="press('3')">3</button>
+        <button class="btn operator" onclick="press('+')">+</button>
+        
+        <button class="btn zero" onclick="press('0')">0</button>
+        <button class="btn" onclick="press('.')">,</button>
+        <button class="btn operator" onclick="calculate()">=</button>
+    </div>
+</div>
+
+<script>
+    const currencies = [
+        "EUR","GBP","CHF","PLN","CZK","HUF","RON","BGN","RSD","BAM","ALL","MKD","ISK","DKK","NOK","SEK","UAH","GEL","AMD","AZN","BYN","RUB","MDL","TRY","GIP",
+        "USD","CAD","MXN","GTQ","BZD","HNL","CRC","NIO","PAB","BSD","CUP","DOP","HTG","JMD","XCD","BBD","TTD","ARS","BOB","BRL","CLP","COP","GYD","PYG","PEN","SRD","UYU","VES","AWG","ANG",
+        "AUD","NZD","FJD","PGK","SBD","VUV","WST","TOP","CNY","JPY","KRW","MNT","TWD","HKD","MOP","INR","PKR","BDT","LKR","NPR","MVR","AFN","KZT","UZS","TJS","KGS","TMT","THB","VND","IDR","MYR","PHP","SGD","BND","KHR",
+        "ILS","JOD","LBP","IQD","KWD","BHD","QAR","AED","OMR","YER","SAR","IRR","EGP","LYD","TND","DZD","MAD","MRU","XOF","XAF","NGN","GHS","KES","TZS","UGX","RWF","BIF","CDF","AOA","ZAR","NAD","BWP","SZL","LSL","ZMW","MZN","MGA","MUR","SCR","ETB"
+    ];
+
+    const flagCodes = {
+        "EUR":"eu","GBP":"gb","CHF":"ch","PLN":"pl","CZK":"cz","HUF":"hu","RON":"ro","BGN":"bg","RSD":"rs","BAM":"ba","ALL":"al","MKD":"mk","ISK":"is","DKK":"dk","NOK":"no","SEK":"se","UAH":"ua","GEL":"ge","AMD":"am","AZN":"az","BYN":"by","RUB":"ru","MDL":"md","TRY":"tr","GIP":"gi",
+        "USD":"us","CAD":"ca","MXN":"mx","GTQ":"gt","BZD":"bz","HNL":"hn","CRC":"cr","NIO":"ni","PAB":"pa","BSD":"bs","CUP":"cu","DOP":"do","HTG":"ht","JMD":"jm","XCD":"ag","BBD":"bb","TTD":"tt","ARS":"ar","BOB":"bo","BRL":"br","CLP":"cl","COP":"co","GYD":"gy","PYG":"py","PEN":"pe","SRD":"sr","UYU":"uy","VES":"ve","AWG":"aw","ANG":"cw",
+        "AUD":"au","NZD":"nz","FJD":"fj","PGK":"pg","SBD":"sb","VUV":"vu","WST":"ws","TOP":"to","CNY":"cn","JPY":"jp","KRW":"kr","MNT":"mn","TWD":"tw","HKD":"hk","MOP":"mo","INR":"in","PKR":"pk","BDT":"bd","LKR":"lk","NPR":"np","MVR":"mv","AFN":"af","KZT":"kz","UZS":"uz","TJS":"tj","KGS":"kg","TMT":"tm","THB":"th","VND":"vn","IDR":"id","MYR":"my","PHP":"ph","SGD":"sg","BND":"bn","KHR":"kh",
+        "ILS":"il","JOD":"jo","LBP":"lb","IQD":"iq","KWD":"kw","BHD":"bh","QAR":"qa","AED":"ae","OMR":"om","YER":"ye","SAR":"sa","IRR":"ir","EGP":"eg","LYD":"ly","TND":"tn","DZD":"dz","MAD":"ma","MRU":"mr","XOF":"sn","XAF":"cm","NGN":"ng","GHS":"gh","KES":"ke","TZS":"tz","UGX":"ug","RWF":"rw","BIF":"bi","CDF":"cd","AOA":"ao","ZAR":"za","NAD":"na","BWP":"bw","SZL":"sz","LSL":"ls","ZMW":"zm","MZN":"mz","MGA":"mg","MUR":"mu","SCR":"sc","ETB":"et"
+    };
+
+    let c1 = "EUR", c2 = "USD";
+    let expression = "0";
+    let currentRates = {};
+
+    function init() {
+        const s1 = document.getElementById('sel1');
+        const s2 = document.getElementById('sel2');
+        currencies.forEach(curr => {
+            s1.add(new Option(curr, curr));
+            s2.add(new Option(curr, curr));
+        });
+        s1.value = c1;
+        s2.value = c2;
+        updateUI();
+        fetchRates();
+    }
+
+    async function fetchRates() {
+        try {
+            const res = await fetch(`https://api.exchangerate-api.com/v4/latest/${c1}`);
+            const data = await res.json();
+            currentRates = data.rates;
+            convert();
+        } catch (e) {
+            console.log("Ошибка сети, используем фиктивные данные");
+            currentRates = { "USD": 1.08, "RUB": 92.5, "EUR": 1 };
+            convert();
+        }
+    }
+
+    function updateCurrency(num) {
+        c1 = document.getElementById('sel1').value;
+        c2 = document.getElementById('sel2').value;
+        if(num === 1) fetchRates(); 
+        updateUI();
+        convert();
+    }
+
+    function swapCurrencies() {
+        let temp = c1;
+        c1 = c2;
+        c2 = temp;
+        
+        document.getElementById('sel1').value = c1;
+        document.getElementById('sel2').value = c2;
+        
+        updateUI();
+        fetchRates(); 
+    }
+
+    function updateUI() {
+        document.getElementById('code1').innerText = c1;
+        document.getElementById('code2').innerText = c2;
+        document.getElementById('flag1').style.backgroundImage = `url('https://flagcdn.com/w80/${flagCodes[c1]}.png')`;
+        document.getElementById('flag2').style.backgroundImage = `url('https://flagcdn.com/w80/${flagCodes[c2]}.png')`;
+    }
+
+    function press(key) {
+        if (key === 'C') expression = "0";
+        else if (key === 'BACK') expression = expression.length > 1 ? expression.slice(0, -1) : "0";
+        else if (key === '%') {
+            try { expression = String(eval(expression) / 100); } catch(e) { expression = "0"; }
+        } else {
+            const ops = ['+', '-', '*', '/'];
+            if (ops.includes(key) && ops.includes(expression.slice(-1))) return; 
+            if (expression === "0" && !ops.includes(key) && key !== '.') expression = key;
+            else expression += key;
+        }
+        renderInput();
+        convert();
+    }
+
+    function renderInput() {
+        let view = expression.replace(/\//g, '÷').replace(/\*/g, '×').replace(/\-/g, '−');
+        document.getElementById('val1').innerText = view;
+    }
+
+    function calculate() {
+        try {
+            expression = String(eval(expression));
+            renderInput();
+            convert();
+        } catch(e) {
+            expression = "0";
+            renderInput();
+        }
+    }
+
+    function convert() {
+        try {
+            let baseVal = eval(expression) || 0;
+            let rate = currentRates[c2] || 1;
+            let result = baseVal * rate;
+            document.getElementById('val2').innerText = result.toLocaleString('ru-RU', {maximumFractionDigits: 2});
+            document.getElementById('ratetext').innerText = `1 ${c1} = ${rate.toFixed(4)} ${c2}`;
+        } catch(e) {}
+    }
+
+    init();
+</script>
+</body>
+</html>
