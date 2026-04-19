@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Конструктор рекламного баннера</title>
+<style>
+  :root {
+    --bg: #12121c;
+    --card: #1e1e2d;
+    --accent: #667eea;
+    --accent-hover: #764ba2;
+    --text: #e2e8f0;
+    --text-muted: #94a3b8;
+    --border: #2d3748;
+    --success: #10b981;
+    --danger: #ef4444;
+    --icon-color: #667eea;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    padding-bottom: 50px;
+  }
+
+  /* 🔝 ЗАКРЕПЛЁННОЕ ПРЕВЬЮ */
+  #preview-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: var(--bg);
+    padding: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .rb-banner {
+    width: calc(100% - 20px);
+    height: 50px;
+    margin: 0 auto;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    background-size: 300% 300%;
+    animation: rbGrad 4s ease infinite;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    text-decoration: none;
+    box-shadow: 0 4px 15px rgba(102,126,234,0.4);
+    cursor: pointer;
+  }
+  .rb-banner:hover { box-shadow: 0 6px 25px rgba(102,126,234,0.6); }
+  .rb-banner::before {
+    content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+    animation: rbShine 3s ease-in-out infinite;
+  }
+  .rb-slides { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 1; }
+  .rb-slide {
+    position: absolute; color: #fff; font-size: 15px; font-weight: 600;
+    white-space: nowrap; opacity: 0; transform: translateY(20px) scale(0.95); filter: blur(4px);
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex; align-items: center; gap: 10px; padding: 0 10px;
+  }
+  .rb-slide.active { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  .rb-btn {
+    padding: 3px 12px; background: rgba(255,255,255,0.25); border-radius: 12px;
+    font-size: 12px; font-weight: 700; animation: rbPulse 2s ease-in-out infinite;
+    border: 1px solid rgba(255,255,255,0.3); flex-shrink: 0;
+  }
+
+  @keyframes rbGrad { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+  @keyframes rbShine { 0%{left:-100%} 50%,100%{left:100%} }
+  @keyframes rbPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+
+  @media (max-width: 768px) {
+    .rb-slide { font-size: 13px; gap: 6px; }
+    .rb-btn { font-size: 10px; padding: 2px 8px; }
+  }
+
+  /* 🛠 КОНСТРУКТОР */
+  .config-panel {
+    max-width: 800px;
+    margin: 30px auto;
+    padding: 20px;
+    background: var(--card);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+  h2 { margin-bottom: 20px; font-size: 22px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 10px; }
+  h3 { margin: 15px 0 10px; font-size: 18px; }
+
+  #rows-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+  .rb-row {
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    background: #161622; padding: 10px; border-radius: 8px; border: 1px solid var(--border);
+  }
+  .rb-row input {
+    flex: 1; min-width: 120px; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border);
+    background: #1e1e2d; color: #fff; font-size: 14px; transition: border 0.2s;
+  }
+  .rb-row input:focus { outline: none; border-color: var(--accent); }
+  .rb-row input::placeholder { color: #64748b; }
+
+  .btn {
+    padding: 10px 18px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;
+    transition: all 0.2s; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+  }
+  .btn-add { background: var(--accent); color: #fff; width: 100%; margin-bottom: 20px; }
+  .btn-add:hover { background: var(--accent-hover); transform: translateY(-1px); }
+  .btn-remove { background: var(--danger); color: #fff; padding: 8px 10px; font-size: 18px; line-height: 1; }
+  .btn-remove:hover { background: #dc2626; }
+  .btn-preview { background: #3b82f6; color: #fff; }
+  .btn-preview:hover { background: #2563eb; }
+  .btn-generate { background: var(--success); color: #fff; }
+  .btn-generate:hover { background: #059669; }
+  .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 25px; }
+
+  /* 🔗 СЕКЦИЯ ССЫЛКИ И ПЕРЕКЛЮЧАТЕЛЬ */
+  .link-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: #161622;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    margin-bottom: 15px;
+  }
+  .link-section label.link-label {
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .link-section label.link-label svg {
+    width: 16px;
+    height: 16px;
+    fill: var(--icon-color);
+  }
+  .link-section input[type="url"] {
+    flex: 1;
+    min-width: 150px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: #1e1e2d;
+    color: #fff;
+    font-size: 14px;
+    transition: border 0.2s;
+  }
+  .link-section input[type="url"]:focus { outline: none; border-color: var(--accent); }
+  .link-section input[type="url"]::placeholder { color: #64748b; }
+
+  .toggle-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
+  .toggle-label {
+    color: var(--text-muted);
+    font-size: 13px;
+    white-space: nowrap;
+    user-select: none;
+    cursor: pointer;
+  }
+
+  /* Переключатель toggle-switch */
+  .toggle-switch { position: relative; width: 48px; height: 26px; }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute; cursor: pointer; inset: 0;
+    background: #475569; border-radius: 26px; transition: 0.3s;
+  }
+  .toggle-slider::before {
+    content: '';
+    position: absolute; height: 20px; width: 20px; left: 3px; bottom: 3px;
+    background: #fff; border-radius: 50%; transition: 0.3s;
+  }
+  .toggle-switch input:checked + .toggle-slider { background: var(--success); }
+  .toggle-switch input:checked + .toggle-slider::before { transform: translateX(22px); }
+
+  @media (max-width: 600px) {
+    .toggle-wrapper { margin-left: 0; }
+    .link-section { gap: 8px; }
+    .link-section input[type="url"] { min-width: 100%; }
+    .toggle-wrapper { width: 100%; justify-content: flex-start; margin-top: 4px; }
+  }
+
+  #output-section { display: none; margin-top: 10px; }
+  .code-wrapper { position: relative; margin-bottom: 10px; }
+  #code-output {
+    width: 100%; height: 250px; background: #0f0f17; color: #a5f3fc; font-family: 'Fira Code', monospace;
+    font-size: 13px; padding: 12px; border-radius: 8px; border: 1px solid var(--border);
+    resize: vertical; line-height: 1.4;
+  }
+  .btn-copy { background: #475569; color: #fff; }
+  .btn-copy:hover { background: #334155; }
+  .hidden { display: none !important; }
+
+  /* SVG Icon Styles */
+  .icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    fill: currentColor;
+    vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+
+<!-- 🔝 ПРЕВЬЮ БАННЕРА -->
+<div id="preview-sticky">
+  <a href="#" target="_blank" rel="noopener noreferrer" class="rb-banner" id="preview-banner">
+    <div class="rb-slides" id="preview-slides"></div>
+  </a>
+</div>
+
+<!-- 🛠 КОНСТРУКТОР -->
+<main class="config-panel">
+  <h2>
+    Конструктор рекламного баннера
+  </h2>
+  
+  <div id="rows-container">
+    <!-- Сюда добавляются строки -->
+  </div>
+  
+  <button class="btn btn-add" onclick="addRow()">
+    <!-- Иконка Idea Generation (документ с плюсом) - ТЕПЕРЬ ЗДЕСЬ -->
+    <svg class="icon" viewBox="0 0 24 24">
+      <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+      <circle cx="18" cy="18" r="4" fill="currentColor"/>
+      <path d="M18 16v4M16 18h4" stroke="white" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    Добавить фразу
+  </button>
+
+  <!-- 🔗 Ссылка и переключатель -->
+  <div class="link-section">
+    <label class="link-label">
+      <!-- Иконка Broken Link -->
+      <svg class="icon" viewBox="0 0 24 24">
+        <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+        <path d="M15.5 9.5l-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.6"/>
+      </svg>
+      Ссылка:
+    </label>
+    <input type="url" id="input-link" placeholder="https://ваш-сайт.com" value="https://ваша-ссылка.com">
+    <div class="toggle-wrapper">
+      <span class="toggle-label" onclick="this.previousElementSibling.click()">В новой вкладке</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="toggle-target" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-preview" onclick="updatePreview()">
+      <!-- Иконка Preview (глаз) -->
+      <svg class="icon" viewBox="0 0 24 24">
+        <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+        <path d="M3 3l18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+      </svg>
+      Просмотреть
+    </button>
+    <button class="btn btn-generate" onclick="generateCode()">
+      <!-- Иконка Add Notes (лампочка с плюсом) - ТЕПЕРЬ ЗДЕСЬ -->
+      <svg class="icon" viewBox="0 0 24 24">
+        <path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7zm2.85 11.1l-.85.6V16h-4v-2.3l-.85-.6C7.8 12.16 7 10.63 7 9c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.63-.8 3.16-2.15 4.1z"/>
+        <path d="M12 7c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+        <path d="M19 13h-2v-2h-2v2h-2v2h2v2h2v-2h2v-2z"/>
+      </svg>
+      Сгенерировать
+    </button>
+  </div>
+
+  <div id="output-section">
+    <h3>Готовый код для сайта:</h3>
+    <div class="code-wrapper">
+      <textarea id="code-output" readonly></textarea>
+    </div>
+    <button class="btn btn-copy" onclick="copyCode()">
+      <!-- Иконка Copy (копирование документа) -->
+      <svg class="icon" viewBox="0 0 24 24">
+        <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+      </svg>
+      Копировать
+    </button>
+  </div>
+</main>
+
+<script>
+  // 🔧 Инициализация
+  document.addEventListener('DOMContentLoaded', () => {
+    addRow('📢 ВАША РЕКЛАМА!', 'ПОДРОБНЕЕ ➺');
+    updatePreview();
+  });
+
+  let previewInterval;
+
+  // ➕ Добавить строку
+  function addRow(defaultText = '', defaultBtn = 'ПОДРОБНЕЕ ➺') {
+    const container = document.getElementById('rows-container');
+    const row = document.createElement('div');
+    row.className = 'rb-row';
+    row.innerHTML = `
+      <input type="text" class="input-text" placeholder="Текст рекламы..." value="${defaultText}">
+      <input type="text" class="input-btn" placeholder="Текст кнопки..." value="${defaultBtn}">
+      <button class="btn btn-remove" onclick="this.parentElement.remove(); updatePreview();" title="Удалить">✕</button>
+    `;
+    container.appendChild(row);
+  }
+
+  // 👁 Обновить превью
+  function updatePreview() {
+    clearInterval(previewInterval);
+    const container = document.getElementById('preview-slides');
+    const banner = document.getElementById('preview-banner');
+    container.innerHTML = '';
+    const rows = document.querySelectorAll('.rb-row');
+    const slides = [];
+
+    // Обновляем ссылку в превью
+    const linkVal = document.getElementById('input-link').value.trim() || 'https://ваша-ссылка.com';
+    banner.href = linkVal;
+
+    // Обновляем target в превью
+    const newTab = document.getElementById('toggle-target').checked;
+    if (newTab) {
+      banner.setAttribute('target', '_blank');
+      banner.setAttribute('rel', 'noopener noreferrer');
+    } else {
+      banner.removeAttribute('target');
+      banner.removeAttribute('rel');
+    }
+
+    rows.forEach(row => {
+      const text = row.querySelector('.input-text').value.trim() || 'ВАШ ТЕКСТ';
+      const btn = row.querySelector('.input-btn').value.trim() || 'ПОДРОБНЕЕ →';
+      const div = document.createElement('div');
+      div.className = 'rb-slide';
+      div.innerHTML = `${escapeHtml(text)} <span class="rb-btn">${escapeHtml(btn)}</span>`;
+      container.appendChild(div);
+      slides.push(div);
+    });
+
+    if (slides.length === 0) return;
+
+    let idx = 0;
+    slides[0].classList.add('active');
+    previewInterval = setInterval(() => {
+      slides[idx].classList.remove('active');
+      idx = (idx + 1) % slides.length;
+      slides[idx].classList.add('active');
+    }, 3000);
+  }
+
+  // 💻 Сгенерировать код
+  function generateCode() {
+    const rows = document.querySelectorAll('.rb-row');
+    const slidesData = [];
+    rows.forEach(r => {
+      const t = r.querySelector('.input-text').value.trim() || 'ВАШ ТЕКСТ';
+      const b = r.querySelector('.input-btn').value.trim() || 'ПОДРОБНЕЕ ➺';
+      slidesData.push({ text: escapeHtml(t), btn: escapeHtml(b) });
+    });
+
+    const slidesHTML = slidesData.map((s, i) => 
+      `    <div class="rb-slide${i === 0 ? ' active' : ''}">${s.text} <span class="rb-btn">${s.btn}</span></div>`
+    ).join('\n');
+
+    const linkVal = document.getElementById('input-link').value.trim() || 'https://ваша-ссылка.com';
+    const newTab = document.getElementById('toggle-target').checked;
+
+    const targetAttr = newTab ? ' target="_blank" rel="noopener noreferrer"' : '';
+    const safeLink = escapeHtml(linkVal);
+
+    const code = `
+<meta charset="UTF-8">
+<style>
+  .rb-banner{width:calc(100% - 20px);height:50px;margin:10px auto;background:linear-gradient(135deg,#667eea 0%,#764ba2 50%,#f093fb 100%);background-size:300% 300%;animation:rbGrad 4s ease infinite;border-radius:10px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;text-decoration:none;box-shadow:0 4px 15px rgba(102,126,234,.4)}.rb-banner:hover{box-shadow:0 6px 25px rgba(102,126,234,.6)}.rb-banner::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent);animation:rbShine 3s ease-in-out infinite}.rb-slides{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;z-index:1}.rb-slide{position:absolute;color:#fff;font-size:15px;font-weight:600;white-space:nowrap;opacity:0;transform:translateY(20px) scale(.95);filter:blur(4px);transition:all .6s cubic-bezier(.4,0,.2,1);display:flex;align-items:center;gap:10px;padding:0 10px}.rb-slide.active{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}.rb-btn{padding:3px 12px;background:rgba(255,255,255,.25);border-radius:12px;font-size:12px;font-weight:700;animation:rbPulse 2s ease-in-out infinite;border:1px solid rgba(255,255,255,.3);flex-shrink:0}@keyframes rbGrad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}@keyframes rbShine{0%{left:-100%}50%,100%{left:100%}}@keyframes rbPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}@media(max-width:768px){.rb-slide{font-size:13px;gap:6px}.rb-btn{font-size:10px;padding:2px 8px}}
+</style>
+
+<a href="${safeLink}"${targetAttr} class="rb-banner">
+  <div class="rb-slides">
+${slidesHTML}
+  </div>
+</a>
+
+<script>(function(){const s=document.querySelectorAll('.rb-slide');let i=0;s[0]&&(s[0].classList.add('active'),setInterval(()=>{s[i].classList.remove('active');i=(i+1)%s.length;s[i].classList.add('active')},3e3))})();<\/script>
+<!-- REKLAMA BANNER END -->`;
+
+    document.getElementById('code-output').value = code;
+    const out = document.getElementById('output-section');
+    out.style.display = 'block';
+    out.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // 📋 Копирование
+  function copyCode() {
+    const txt = document.getElementById('code-output');
+    txt.select();
+    navigator.clipboard.writeText(txt.value).then(() => {
+      const btn = document.querySelector('.btn-copy');
+      const orig = btn.innerHTML;
+      btn.innerHTML = '✅ Скопировано!';
+      btn.style.background = '#10b981';
+      setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; }, 2000);
+    });
+  }
+
+  // 🔒 Экранирование HTML
+  function escapeHtml(str) {
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  }
+</script>
+
+</body>
+</html>
