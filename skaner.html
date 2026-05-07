@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Сканер Штрихкодов</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="text/javascript" src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Tailwind gray-100 */
+        }
+        
+        /* Контейнер для окна сканера со строгими размерами */
+        .scanner-slit {
+            width: 100%;
+            height: 50px;
+            position: relative;
+            overflow: hidden;
+            border: 2px solid #3b82f6; /* Tailwind blue-500 */
+            border-radius: 0.5rem;
+            display: none; /* Скрыто по умолчанию */
+            background-color: #000;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        /* Видео растягивается на 100% ширины, а по высоте обрезается (cover), 
+           чтобы не было искажений пропорций */
+        .scanner-slit video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Анимация сканирующей красной линии */
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #ef4444; /* Tailwind red-500 */
+            box-shadow: 0 0 8px 2px rgba(239, 68, 68, 0.6);
+            animation: scan 2s infinite linear;
+            z-index: 10;
+        }
+
+        @keyframes scan {
+            0% { top: 0; }
+            50% { top: 48px; } /* 50px - 2px height */
+            100% { top: 0; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4">
+
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 mt-8 space-y-6">
+        
+        <!-- Заголовок -->
+        <div class="text-center">
+            <h1 class="text-2xl font-bold text-gray-800">Сканер</h1>
+            <p class="text-sm text-gray-500 mt-1">Наведите камеру на штрихкод</p>
+        </div>
+
+        <!-- Блок для вывода сообщений (ошибки, успехи) -->
+        <div id="status-box" class="hidden p-3 rounded-lg text-sm font-medium text-center transition-all duration-300">
+        </div>
+
+        <!-- Кнопки управления -->
+        <div class="flex flex-col gap-3">
+            <button id="start-btn" class="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-4 rounded-xl shadow-md transition-colors flex items-center justify-center gap-2 text-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h4a1 1 0 010 2H5v3a1 1 0 01-2 0V4zm14-1a1 1 0 011 1v3a1 1 0 01-2 0V5h-3a1 1 0 010-2h4zM3 20a1 1 0 011 1h4a1 1 0 010-2H5v-3a1 1 0 01-2 0v3zm14 1a1 1 0 011-1v-3a1 1 0 01-2 0v3h-3a1 1 0 010 2h4z" />
+                </svg>
+                Сканировать
+            </button>
+            <button id="stop-btn" class="hidden w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 rounded-xl transition-colors">
+                Отмена
+            </button>
+        </div>
+
+        <!-- Окно сканера. Жестко задано в CSS: ширина 100%, высота 50px -->
+        <div id="scanner-slit" class="scanner-slit">
+            <video id="video"></video>
+            <div class="scan-line"></div>
+        </div>
+
+        <!-- Поле ввода для результата -->
+        <div class="space-y-2">
+            <label for="result-input" class="block text-sm font-medium text-gray-700">Результат сканирования:</label>
+            <div class="relative">
+                <input type="text" id="result-input" readonly placeholder="Штрихкод появится здесь..." 
+                    class="w-full pl-4 pr-12 py-4 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 font-mono text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow">
+                
+                <!-- Кнопка копирования результата -->
+                <button id="copy-btn" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-blue-600 focus:outline-none transition-colors" title="Копировать">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // Инициализация элементов DOM
+            const startBtn = document.getElementById('start-btn');
+            const stopBtn = document.getElementById('stop-btn');
+            const scannerSlit = document.getElementById('scanner-slit');
+            const resultInput = document.getElementById('result-input');
+            const statusBox = document.getElementById('status-box');
+            const copyBtn = document.getElementById('copy-btn');
+
+            let codeReader = null;
+
+            // Функция показа сообщений без использования alert()
+            function showStatus(message, type = 'error') {
+                statusBox.textContent = message;
+                statusBox.className = `p-3 rounded-lg text-sm font-medium text-center transition-all duration-300 block ${
+                    type === 'error' ? 'bg-red-100 text-red-700' : 
+                    type === 'success' ? 'bg-green-100 text-green-700' : 
+                    'bg-blue-100 text-blue-700'
+                }`;
+                
+                // Скрываем сообщение об успехе через 3 секунды
+                if (type === 'success') {
+                    setTimeout(() => {
+                        statusBox.classList.add('hidden');
+                        statusBox.classList.remove('block');
+                    }, 3000);
+                }
+            }
+
+            function hideStatus() {
+                statusBox.classList.add('hidden');
+                statusBox.classList.remove('block');
+            }
+
+            // Функция запуска сканера
+            async function startScanning() {
+                try {
+                    hideStatus();
+                    resultInput.value = ''; // Очищаем предыдущий результат
+                    
+                    // Инициализируем библиотеку, если еще не инициализирована
+                    if (!codeReader) {
+                        codeReader = new ZXing.BrowserMultiFormatReader();
+                    }
+
+                    // Меняем UI на состояние "Сканирование"
+                    startBtn.classList.add('hidden');
+                    stopBtn.classList.remove('hidden');
+                    scannerSlit.style.display = 'block';
+
+                    // Запрашиваем доступ к камере (приоритет - задняя камера)
+                    const constraints = {
+                        video: { facingMode: "environment" }
+                    };
+
+                    // Начинаем декодирование из видеопотока
+                    await codeReader.decodeFromConstraints(constraints, 'video', (result, err) => {
+                        if (result) {
+                            // Успешное сканирование
+                            handleSuccess(result.text);
+                        }
+                        
+                        if (err && !(err instanceof ZXing.NotFoundException)) {
+                            // Игнорируем NotFoundException (срабатывает каждый кадр, где нет штрихкода)
+                            // Логируем реальные ошибки
+                            console.warn("Ошибка сканирования:", err);
+                        }
+                    });
+
+                } catch (error) {
+                    console.error("Ошибка инициализации камеры:", error);
+                    stopScanning();
+                    
+                    // Проверяем тип ошибки для понятного сообщения пользователю
+                    if (error.name === 'NotAllowedError' || error.message.includes('Permission denied')) {
+                        showStatus("Нет доступа к камере. Пожалуйста, разрешите использование камеры в браузере.", "error");
+                    } else if (error.name === 'NotFoundError' || error.message.includes('Requested device not found')) {
+                        showStatus("Камера не найдена на вашем устройстве.", "error");
+                    } else {
+                        showStatus("Произошла ошибка при запуске камеры: " + error.message, "error");
+                    }
+                }
+            }
+
+            // Функция остановки сканера
+            function stopScanning() {
+                if (codeReader) {
+                    codeReader.reset(); // Останавливаем поток и очищаем видео
+                }
+                
+                // Возвращаем UI в исходное состояние
+                scannerSlit.style.display = 'none';
+                stopBtn.classList.add('hidden');
+                startBtn.classList.remove('hidden');
+            }
+
+            // Обработка успешного сканирования
+            function handleSuccess(decodedText) {
+                // Вибрация при успехе (если поддерживается устройством)
+                if (navigator.vibrate) {
+                    navigator.vibrate(200);
+                }
+                
+                resultInput.value = decodedText;
+                showStatus("Штрихкод успешно отсканирован!", "success");
+                stopScanning();
+            }
+
+            // Привязка событий к кнопкам
+            startBtn.addEventListener('click', startScanning);
+            stopBtn.addEventListener('click', stopScanning);
+
+            // Кнопка копирования результата в буфер обмена
+            copyBtn.addEventListener('click', () => {
+                if (!resultInput.value) return;
+                
+                try {
+                    resultInput.select();
+                    document.execCommand('copy');
+                    
+                    // Визуальный отклик при копировании
+                    const originalColor = copyBtn.style.color;
+                    copyBtn.classList.remove('text-gray-400');
+                    copyBtn.classList.add('text-green-500');
+                    setTimeout(() => {
+                        copyBtn.classList.remove('text-green-500');
+                        copyBtn.classList.add('text-gray-400');
+                        window.getSelection().removeAllRanges();
+                    }, 1000);
+                    
+                } catch (err) {
+                    showStatus("Не удалось скопировать текст.", "error");
+                }
+            });
+        });
+    </script>
+</body>
+</html>
