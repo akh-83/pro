@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Приложение: Рабочее время</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --bg-app: #181b24;
+            --bg-card: #222533;
+            --border-color: #313547;
+            --input-bg: #1b1e28;
+            --text-main: #ffffff;
+            --text-sec: #8c92a6;
+            --accent-green: #10c759;
+            --accent-blue: #5575fc;
+            --accent-light-blue: #2ab2ff; /* Новый цвет для 12 ч. */
+            --accent-red: #d15c5c;
+            --accent-purple: #6f57f4;
+            --bar-bg: #2e3245;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #121212;
+            font-family: 'Inter', sans-serif;
+            color: var(--text-main);
+        }
+
+        #app {
+            width: 100%;
+            max-width: 400px;
+            height: 100vh;
+            max-height: 850px;
+            background-color: var(--bg-app);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            border-radius: 10px;
+        }
+
+        /* --- Общие стили вкладок --- */
+        .view {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
+            background-color: var(--bg-app);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .view.active {
+            opacity: 1;
+            pointer-events: all;
+            z-index: 5;
+        }
+
+        #view-info { transform: translateX(100%); z-index: 10; opacity: 1; }
+        #view-info.active { transform: translateX(0); }
+        .view-blur { transform: translateX(-20%); opacity: 0.3; pointer-events: none; }
+
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 24px 20px 16px; flex-shrink: 0;
+        }
+        .header-title { font-size: 20px; font-weight: 500; }
+
+        .icon-btn {
+            background: transparent; border: none; cursor: pointer;
+            color: var(--text-sec); transition: color 0.2s, transform 0.2s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .icon-btn:active { transform: scale(0.9); }
+        .icon-btn:hover { color: #fff; }
+
+        main { flex: 1; overflow-y: auto; padding: 0 20px 130px; }
+        main::-webkit-scrollbar { display: none; }
+
+        h2 { font-weight: 300; font-size: 20px; margin: 20px 0 15px; color: var(--text-main); }
+
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        /* --- Вкладка HOME --- */
+        .timer-card { padding: 25px 20px; }
+        .timer-huge { font-size: 54px; color: var(--accent-green); font-weight: 600; line-height: 1; letter-spacing: -1px; }
+        .timer-date { font-size: 24px; color: var(--accent-blue); font-weight: 600; margin-top: 15px; margin-bottom: 5px; }
+        .timer-subtitle { font-size: 16px; font-weight: 300; color: var(--text-main); }
+        .timer-start-info { font-size: 16px; color: var(--text-sec); margin-top: 15px; margin-bottom: 5px; font-weight: 300; }
+        .timer-start-info .blue-text { color: var(--accent-blue); font-weight: 600; }
+        .history-icon-top { position: absolute; top: 25px; right: 20px; color: var(--text-sec); }
+        .btn-start, .btn-stop {
+            position: absolute; bottom: 25px; right: 20px;
+            border: none; border-radius: 15px; padding: 8px 20px;
+            font-size: 14px; font-weight: 600; color: #fff; cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn-start, .btn-stop { background-color: var(--accent-green); }
+        .btn-start:active, .btn-stop:active { transform: scale(0.95); }
+
+        .chart-header { display: flex; justify-content: space-between; align-items: center; margin-top: 25px; margin-bottom: 15px;}
+        .chart-title { font-size: 15px; font-weight: 300; line-height: 1.4; color: var(--text-sec); }
+        .chart-icon-btn { background: rgba(111, 87, 244, 0.15); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: var(--accent-purple); }
+        .chart-tabs { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 25px; }
+        .chart-tab { flex: 1; background: var(--bg-card); border-radius: 20px; padding: 8px 0; text-align: center; font-size: 14px; font-weight: 500; color: var(--text-sec); }
+        .chart-tab.active { background: var(--accent-purple); color: #fff; }
+
+        .chart-wrapper { display: flex; height: 160px; margin-bottom: 10px; }
+        .y-axis { display: flex; flex-direction: column; justify-content: space-between; font-size: 11px; color: var(--text-sec); width: 35px; padding-bottom: 20px; }
+        .bars-container { flex: 1; display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 20px; position: relative; }
+        .bar-wrap { width: 14px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; position: relative; }
+        .bar { width: 100%; background: var(--bar-bg); border-radius: 7px; }
+        .bar.active { background: var(--accent-purple); }
+        .x-label { position: absolute; bottom: -22px; font-size: 11px; color: var(--text-sec); }
+
+        .last-shift-card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 15px; position: relative; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; min-height: 120px; overflow: hidden;}
+        .last-shift-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--accent-blue); }
+        .ls-date { text-align: center; font-size: 14px; font-weight: 300; margin-bottom: 15px;}
+        .ls-row { display: flex; justify-content: space-between; align-items: flex-end; }
+        .ls-title { font-size: 20px; font-weight: 300; line-height: 1.2; }
+        .ls-time-block { text-align: right; }
+        .ls-hours { font-size: 13px; font-weight: 300; margin-bottom: 3px; line-height: 1.4; }
+        .ls-total { font-size: 34px; color: var(--accent-green); font-weight: 300; line-height: 1; }
+
+        /* --- Вкладка HISTORY --- */
+        .history-stats-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 24px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .hs-left { display: flex; flex-direction: column; gap: 16px; }
+        .hs-row { display: flex; align-items: center; gap: 12px; }
+        .hs-val-green { font-size: 56px; color: var(--accent-green); font-weight: 300; line-height: 1; }
+        .hs-val-white { font-size: 24px; color: #ffffff; font-weight: 300; line-height: 1; }
+        .hs-val-blue { font-size: 40px; color: var(--accent-light-blue); font-weight: 300; line-height: 1; margin-bottom: 10px; }
+        .hs-text-main { font-size: 15px; font-weight: 300; line-height: 1.3; color: #ffffff; }
+        .hs-text-sec { font-size: 15px; font-weight: 300; color: var(--text-sec); }
+        .hs-right { display: flex; flex-direction: column; padding-top: 4px; }
+
+        .time-item { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 14px 20px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .time-date { font-size: 14px; color: var(--text-sec); }
+        .time-hours { font-size: 20px; color: var(--accent-green); font-weight: 400; }
+        .time-range { font-size: 13px; text-align: right; line-height: 1.4; color: #d1d5db; }
+        
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px 5px; text-align: center; }
+        .cal-header-day { font-size: 11px; font-weight: 600; color: var(--text-sec); margin-bottom: 5px; text-transform: uppercase; }
+        .cal-day { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; margin: auto; border-radius: 50%; font-size: 13px; font-weight: 500; }
+        .weekend { color: var(--accent-red); }
+        .cal-day.active { background-color: var(--accent-blue); color: #fff; }
+        .empty-day { visibility: hidden; }
+
+        /* --- Вкладка INFO --- */
+        .accordion-item { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px; margin-bottom: 12px; overflow: hidden; }
+        .accordion-header { padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 16px; font-weight: 500; }
+        .chevron { transition: transform 0.3s; color: var(--text-sec); }
+        .accordion-item.active .chevron { transform: rotate(180deg); }
+        .accordion-content { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.3s; }
+        .accordion-item.active .accordion-content { grid-template-rows: 1fr; }
+        .text-content { padding: 0 24px 24px; font-size: 13px; line-height: 1.6; color: var(--text-sec); opacity: 0; transition: opacity 0.3s 0.1s; overflow: hidden; }
+        .accordion-item.active .text-content { opacity: 1; }
+
+        /* --- Вкладка CALC --- */
+        .segmented-control { display: flex; gap: 10px; margin-bottom: 15px; }
+        .segment-btn { flex: 1; padding: 12px 0; border-radius: 12px; border: 1px solid var(--border-color); background: transparent; color: var(--text-sec); font-weight: 600; font-size: 14px; cursor: pointer; transition: 0.2s; }
+        .segment-btn.active { background: var(--accent-blue); color: #fff; border-color: var(--accent-blue); }
+        .form-card { padding: 20px; }
+        .form-group { margin-bottom: 18px; }
+        .form-label { display: block; font-size: 11px; font-weight: 600; color: var(--text-sec); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-input { width: 100%; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 16px; color: #fff; font-size: 15px; font-family: inherit; outline: none; transition: border-color 0.2s; }
+        .form-input:focus { border-color: var(--accent-blue); }
+        .toggle-row { display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 16px; margin-bottom: 18px; cursor: pointer; transition: 0.2s; }
+        .toggle-left { display: flex; align-items: center; gap: 12px; }
+        .toggle-circle { width: 18px; height: 18px; border: 2px solid var(--text-sec); border-radius: 50%; transition: 0.2s; }
+        .toggle-row.active .toggle-circle { border-color: var(--accent-blue); background: var(--accent-blue); }
+        .toggle-text-main { font-size: 15px; color: #fff; font-weight: 600; margin-bottom: 4px; line-height: 1;}
+        .toggle-text-sub { font-size: 11px; color: var(--text-sec); }
+        .toggle-status { font-size: 11px; font-weight: 600; color: var(--text-sec); text-transform: uppercase; }
+        .toggle-row.active .toggle-status { color: var(--accent-blue); }
+        .btn-calc-row { display: flex; gap: 12px; margin-top: 25px; }
+        .btn-calc { flex: 1; padding: 14px 0; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; border: none; color: #fff; transition: transform 0.2s; }
+        .btn-calc:active { transform: scale(0.96); }
+        .btn-primary { background-color: var(--accent-blue); }
+        .btn-secondary { background-color: var(--border-color); }
+
+        /* --- ФИКСИРОВАННОЕ НИЖНЕЕ МЕНЮ --- */
+        .bottom-nav {
+            position: absolute; bottom: 30px; left: 20px; right: 20px; height: 70px;
+            background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 40px;
+            display: flex; justify-content: space-between; align-items: center; padding: 0 30px; z-index: 50;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+        }
+        .nav-btn {
+            background: none; border: none; color: #6c7289; cursor: pointer;
+            transition: color 0.2s, transform 0.2s; display: flex; align-items: center; justify-content: center;
+        }
+        .nav-btn:active { transform: scale(0.9); }
+        .nav-btn.active { color: var(--accent-blue); } 
+        
+        .add-btn {
+            width: 56px; height: 56px; background-color: var(--accent-blue); border-radius: 50%; border: none;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; color: white;
+            box-shadow: 0 4px 15px rgba(85, 117, 252, 0.3); transition: transform 0.2s;
+        }
+        .add-btn:active { transform: scale(0.85); }
+    </style>
+</head>
+<body>
+
+<div id="app">
+
+    <div id="view-home" class="view active">
+        <header>
+            <button class="icon-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7" rx="2"></rect>
+                    <rect x="14" y="3" width="7" height="7" rx="2"></rect>
+                    <rect x="14" y="14" width="7" height="7" rx="2"></rect>
+                    <rect x="3" y="14" width="7" height="7" rx="2"></rect>
+                </svg>
+            </button>
+            <button class="icon-btn" onclick="openInfo()">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+            </button>
+        </header>
+
+        <main>
+            <div class="card timer-card">
+                <div id="timer-state-1">
+                    <svg class="history-icon-top" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                        <path d="M3 3v5h5"></path>
+                        <path d="M12 7v5l4 2"></path>
+                    </svg>
+                    <div class="timer-huge">06:00</div>
+                    <div class="timer-date">21.05.2026</div>
+                    <div class="timer-subtitle">Рабочее время</div>
+                    <button class="btn-start" onclick="toggleTimer()">начать</button>
+                </div>
+                <div id="timer-state-2" style="display: none;">
+                    <div class="timer-huge">11:23</div>
+                    <div class="timer-start-info">начало в <span class="blue-text">06:00</span></div>
+                    <div class="timer-subtitle">Рабочее время</div>
+                    <button class="btn-stop" onclick="toggleTimer()">закончить</button>
+                </div>
+            </div>
+
+            <h2>Рабочие дни</h2>
+            <div class="card">
+                <div class="calendar-grid">
+                    <div class="cal-header-day">ПН</div><div class="cal-header-day">ВТ</div><div class="cal-header-day">СР</div>
+                    <div class="cal-header-day">ЧТ</div><div class="cal-header-day">ПТ</div><div class="cal-header-day weekend">СБ</div>
+                    <div class="cal-header-day weekend">ВС</div>
+
+                    <div class="cal-day empty-day"></div><div class="cal-day empty-day"></div><div class="cal-day empty-day"></div>
+                    <div class="cal-day empty-day"></div><div class="cal-day empty-day"></div><div class="cal-day empty-day"></div>
+                    <div class="cal-day weekend">1</div>
+
+                    <div class="cal-day active">2</div><div class="cal-day active">3</div><div class="cal-day">4</div>
+                    <div class="cal-day">5</div><div class="cal-day">6</div><div class="cal-day weekend">7</div>
+                    <div class="cal-day weekend">8</div>
+                    
+                    <div class="cal-day">9</div><div class="cal-day">10</div><div class="cal-day">11</div>
+                    <div class="cal-day">12</div><div class="cal-day">13</div><div class="cal-day weekend">14</div>
+                    <div class="cal-day weekend">15</div>
+
+                    <div class="cal-day">16</div><div class="cal-day">17</div><div class="cal-day">18</div>
+                    <div class="cal-day">19</div><div class="cal-day">20</div><div class="cal-day weekend">21</div>
+                    <div class="cal-day weekend">22</div>
+
+                    <div class="cal-day">23</div><div class="cal-day">24</div><div class="cal-day">25</div>
+                    <div class="cal-day">26</div><div class="cal-day">27</div><div class="cal-day weekend">28</div>
+                    <div class="cal-day weekend">29</div>
+
+                    <div class="cal-day">30</div><div class="cal-day">31</div>
+                </div>
+            </div>
+
+            <div class="chart-header">
+                <div class="chart-title">График рабочих часов<br>за всё время</div>
+                <div class="chart-icon-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+                        <polyline points="16 7 22 7 22 13"></polyline>
+                    </svg>
+                </div>
+            </div>
+            <div class="chart-tabs">
+                <div class="chart-tab">D</div><div class="chart-tab">W</div>
+                <div class="chart-tab active">M</div><div class="chart-tab">Y</div>
+            </div>
+            <div class="chart-wrapper">
+                <div class="y-axis"><span>300</span><span>250</span><span>200</span><span>150</span><span>100</span><span>50</span></div>
+                <div class="bars-container">
+                    <div class="bar-wrap"><div class="bar" style="height: 60%;"></div><span class="x-label">Jan</span></div>
+                    <div class="bar-wrap"><div class="bar" style="height: 40%;"></div><span class="x-label">Feb</span></div>
+                    <div class="bar-wrap"><div class="bar active" style="height: 95%;"></div><span class="x-label">Mar</span></div>
+                    <div class="bar-wrap"><div class="bar" style="height: 50%;"></div><span class="x-label">Apr</span></div>
+                    <div class="bar-wrap"><div class="bar" style="height: 75%;"></div><span class="x-label">May</span></div>
+                    <div class="bar-wrap"><div class="bar" style="height: 65%;"></div><span class="x-label">Jun</span></div>
+                </div>
+            </div>
+
+            <div class="last-shift-card" style="margin-top: 30px;">
+                <div class="ls-date">20.04.2026</div>
+                <div class="ls-row">
+                    <div class="ls-title">Последняя<br>смена</div>
+                    <div class="ls-time-block">
+                        <div class="ls-hours">06:00<br>16:00</div>
+                        <div class="ls-total">10 ч.</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="view-calc" class="view">
+        <header>
+            <button class="icon-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7" rx="2"></rect>
+                    <rect x="14" y="3" width="7" height="7" rx="2"></rect>
+                    <rect x="14" y="14" width="7" height="7" rx="2"></rect>
+                    <rect x="3" y="14" width="7" height="7" rx="2"></rect>
+                </svg>
+            </button>
+            <button class="icon-btn" onclick="openInfo()">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+            </button>
+        </header>
+
+        <main>
+            <div class="segmented-control">
+                <button class="segment-btn active">Норма</button>
+                <button class="segment-btn">Проценты</button>
+            </div>
+
+            <div class="card form-card">
+                <div class="form-group">
+                    <label class="form-label">КОЛИЧЕСТВО ШТУК</label>
+                    <input type="number" class="form-input" value="0">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">ВРЕМЯ НА 1 ШТУКУ</label>
+                    <input type="text" class="form-input" value="00:00:30">
+                </div>
+
+                <div class="toggle-row" onclick="toggleCheckbox(this)">
+                    <div class="toggle-left">
+                        <div class="toggle-circle"></div>
+                        <div>
+                            <div class="toggle-text-main">Подготовка</div>
+                            <div class="toggle-text-sub">15 минут к норме</div>
+                        </div>
+                    </div>
+                    <div class="toggle-status">НЕ АКТИВНО</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">НАЧАЛО</label>
+                    <input type="text" class="form-input" value="08:00">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">ОКОНЧАНИЕ</label>
+                    <input type="text" class="form-input" value="00:00:00">
+                </div>
+
+                <div class="btn-calc-row">
+                    <button class="btn-calc btn-primary">Рассчитать</button>
+                    <button class="btn-calc btn-secondary">Сохранить</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="view-history" class="view">
+        <header>
+            <button class="icon-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7" rx="2"></rect>
+                    <rect x="14" y="3" width="7" height="7" rx="2"></rect>
+                    <rect x="14" y="14" width="7" height="7" rx="2"></rect>
+                    <rect x="3" y="14" width="7" height="7" rx="2"></rect>
+                </svg>
+            </button>
+            <span class="header-title">Рабочее время</span>
+            <button class="icon-btn" onclick="openInfo()">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+            </button>
+        </header>
+        <main>
+            <div class="history-stats-card">
+                <div class="hs-left">
+                    <div class="hs-row">
+                        <div class="hs-val-green">256</div>
+                        <div class="hs-text-main">за этот<br>месяц</div>
+                    </div>
+                    <div class="hs-row">
+                        <div class="hs-val-white">167</div>
+                        <div class="hs-text-sec">прошлый месяц</div>
+                    </div>
+                </div>
+                <div class="hs-right">
+                    <div class="hs-val-blue">12 ч.</div>
+                    <div class="hs-text-main">Прошлая<br>смена</div>
+                </div>
+            </div>
+            
+            <h2>Рабочие дни</h2>
+            <div class="time-item"><div class="time-date">23.04.2026</div><div class="time-hours">10 ч.</div><div class="time-range">06:00<br>16:00</div></div>
+            <div class="time-item"><div class="time-date">23.04.2026</div><div class="time-hours">10 ч.</div><div class="time-range">06:00<br>16:00</div></div>
+            <div class="time-item"><div class="time-date">23.04.2026</div><div class="time-hours">10 ч.</div><div class="time-range">06:00<br>16:00</div></div>
+        </main>
+    </div>
+
+    <div id="view-info" class="view">
+        <header>
+            <button class="icon-btn" onclick="closeInfo()">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+            </button>
+            <span class="header-title">Справка</span>
+            <div style="width: 28px;"></div>
+        </header>
+        <main>
+            <div class="accordion-item">
+                <div class="accordion-header"><span>Как пользоваться</span><svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+                <div class="accordion-content"><div class="text-content"><br>Текст описания для первого блока.</div></div>
+            </div>
+            <div class="accordion-item">
+                <div class="accordion-header"><span>Как просчитать норму</span><svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+                <div class="accordion-content"><div class="text-content"><br>Текст описания для второго блока...</div></div>
+            </div>
+        </main>
+    </div>
+
+    <nav class="bottom-nav">
+        <button class="nav-btn active" id="nav-home" onclick="switchTab('home')">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+        </button>
+        
+        <button class="add-btn" id="nav-calc" onclick="switchTab('calc')">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+        </button>
+        
+        <button class="nav-btn" id="nav-history" onclick="switchTab('history')">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+        </button>
+    </nav>
+
+</div>
+
+<script>
+    function switchTab(tab) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById('view-' + tab).classList.add('active');
+        if (tab !== 'calc') {
+            document.getElementById('nav-' + tab).classList.add('active');
+        }
+    }
+
+    function toggleCheckbox(el) {
+        el.classList.toggle('active');
+        const statusText = el.querySelector('.toggle-status');
+        if (el.classList.contains('active')) {
+            statusText.innerText = 'АКТИВНО';
+        } else {
+            statusText.innerText = 'НЕ АКТИВНО';
+        }
+    }
+
+    function toggleTimer() {
+        const state1 = document.getElementById('timer-state-1');
+        const state2 = document.getElementById('timer-state-2');
+        if (state1.style.display === 'none') {
+            state1.style.display = 'block';
+            state2.style.display = 'none';
+        } else {
+            state1.style.display = 'none';
+            state2.style.display = 'block';
+        }
+    }
+
+    function openInfo() {
+        const activeView = document.querySelector('.view.active:not(#view-info)');
+        if(activeView) activeView.classList.add('view-blur');
+        document.getElementById('view-info').classList.add('active');
+    }
+    
+    function closeInfo() {
+        document.querySelectorAll('.view-blur').forEach(v => v.classList.remove('view-blur'));
+        document.getElementById('view-info').classList.remove('active');
+    }
+
+    const accordionItems = document.querySelectorAll('.accordion-item');
+    accordionItems.forEach(item => {
+        const header = item.querySelector('.accordion-header');
+        header.addEventListener('click', () => {
+            accordionItems.forEach(other => { if (other !== item) other.classList.remove('active'); });
+            item.classList.toggle('active');
+        });
+    });
+</script>
+
+</body>
+</html>
