@@ -4,6 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Калькулятор времени — Theme Stile</title>
+  <!-- Добавлен скрипт Telegram Web App -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     /* БАЗОВЫЕ СТИЛИ */
     body { background-color: #1b222d; color: #e6edf3; font-family: "Inter", sans-serif; display: flex; flex-direction: column; align-items: center; padding-top: 40px; margin: 0; }
@@ -148,6 +150,57 @@
   </div>
 
   <script>
+    // --- Инициализация Telegram Web App и Хранилища ---
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    const userId = tg.initDataUnsafe?.user?.id || 'guest';
+    const storageKey = 'time_calc_state_' + userId;
+
+    function saveState() {
+      const data = {
+        lang: currentLang,
+        qty: document.getElementById('quantity').value,
+        tpi: document.getElementById('timePerItem').textContent,
+        prep: isPrepActive,
+        start: document.getElementById('startTime').textContent,
+        end: document.getElementById('endTime').textContent,
+        hasResult: document.getElementById('result').innerHTML !== ""
+      };
+      // Сохраняем локально (для быстрого доступа)
+      localStorage.setItem(storageKey, JSON.stringify(data));
+      // Сохраняем в облако Telegram (для кросс-устройств), если доступно
+      if (tg.CloudStorage) tg.CloudStorage.setItem('calc_data', JSON.stringify(data));
+    }
+
+    function loadState() {
+      const applyData = (val) => {
+        try {
+          const data = JSON.parse(val);
+          if (data.lang) setLang(data.lang, false);
+          if (data.qty) document.getElementById('quantity').value = data.qty;
+          if (data.tpi) document.getElementById('timePerItem').textContent = data.tpi;
+          if (data.prep !== undefined) { isPrepActive = data.prep; updatePrepStatus(); }
+          if (data.start) document.getElementById('startTime').textContent = data.start;
+          if (data.end) document.getElementById('endTime').textContent = data.end;
+          if (data.hasResult) calculate(false);
+        } catch(e) {}
+      };
+
+      if (tg.CloudStorage) {
+        tg.CloudStorage.getItem('calc_data', (err, val) => {
+          if (!err && val) applyData(val);
+          else {
+            const local = localStorage.getItem(storageKey);
+            if (local) applyData(local);
+          }
+        });
+      } else {
+        const local = localStorage.getItem(storageKey);
+        if (local) applyData(local);
+      }
+    }
+    // --------------------------------------------------
+
     let activeField = null, isPrepActive = false, shortFormat = false;
     let currentLang = 'Pyc';
 
@@ -181,7 +234,7 @@
       'Pol': {
         labels: { qty:'Ilość sztuk', tpi:'Czas na 1 sztukę', prep:'Przygotowanie', prepSub:'15 min do normy', start:'Początek', end:'Koniec', active:'AKTYWNE', inactive:'NIEAKTYWNE' },
         btns: { calc:'Oblicz', info:'Instrukcja', cancel:'Anuluj', done:'Gotowe', close:'Zamknij', pick:'Czas' },
-        stats: { success:'Wydajność', zone:'Jesteś teraz в strefie:', plan:'Planowany koniec:', norm:'Norma całkowita:', spent1:'Czas na 1 szt:', spentNorm:'Czas zużyty:', fact:'Fakt. koniec:', qtyPerHour:'Ilość na godz:', forThisTime:'W tym czasie:' },
+        stats: { success:'Wydajność', zone:'Jesteś teraz w strefie:', plan:'Planowany koniec:', norm:'Norma całkowita:', spent1:'Czas na 1 szt:', spentNorm:'Czas zużyty:', fact:'Fakt. koniec:', qtyPerHour:'Ilość na godz:', forThisTime:'W tym czasie:' },
         legend: ['Ryzyko', 'Nieźle', 'Norma'],
         zones: { risk: 'Czerwona strefa ryzyka', orange: 'Pomarańczowa strefa', green: 'Zielona strefa', over: 'Czerwona strefa' },
         msgs: { fail: 'NIE DAJESZ RADY!', push: 'PRZYCIŚNIJ!', good: 'Dobre tempo TAK TRZYMAĆ!', over: 'PRZEKRACZASZ NORMĘ!' },
@@ -219,7 +272,7 @@
       }
     };
 
-    function setLang(lang) {
+    function setLang(lang, save = true) {
       currentLang = lang;
       const t = tr[lang] || tr['Pyc'];
       document.querySelectorAll('.lang-tab').forEach(el => el.classList.toggle('active', el.textContent === lang));
@@ -242,7 +295,8 @@
         html += `<div style="background:#232a3b; border-radius:8px; margin-bottom:8px; border:1px solid #343e50;"><div style="padding:16px; display:flex; justify-content:space-between; cursor:pointer; color:#58a6ff; font-size:17px;" onclick="toggleAccordion(this)">${item.t} <span>▼</span></div><div class="instr-white" style="padding:0 16px 16px; display:none;">${item.c}</div></div>`;
       });
       document.getElementById('instructionContent').innerHTML = html;
-      if(document.getElementById('result').innerHTML !== "") calculate();
+      if(document.getElementById('result').innerHTML !== "") calculate(false);
+      if(save) saveState();
     }
 
     function initWheel(id, max) {
@@ -258,13 +312,14 @@
     function confirmPicker() {
       const h = document.querySelector('#hWheel .selected')?.textContent || "00", m = document.querySelector('#mWheel .selected')?.textContent || "00", s = document.querySelector('#sWheel .selected')?.textContent || "00";
       document.getElementById(activeField).textContent = shortFormat ? `${h}:${m}` : `${h}:${m}:${s}`; closePicker();
+      saveState();
     }
 
     function openInstruction() { document.getElementById('infoOverlay').style.display = 'flex'; }
     function closeInstruction() { document.getElementById('infoOverlay').style.display = 'none'; }
     function toggleAccordion(el) { let c = el.nextElementSibling; c.style.display = (c.style.display === 'none' ? 'block' : 'none'); }
 
-    function togglePrep() { isPrepActive = !isPrepActive; updatePrepStatus(); }
+    function togglePrep() { isPrepActive = !isPrepActive; updatePrepStatus(); saveState(); }
 
     function updatePrepStatus() {
       const t = tr[currentLang] || tr['Pyc'];
@@ -277,7 +332,7 @@
     function parseToSec(str) { let p = str.split(':').map(Number); return p.length === 3 ? p[0]*3600 + p[1]*60 + p[2] : p[0]*3600 + p[1]*60; }
     function formatTime(s) { let h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = Math.round(s%60); return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
 
-    function calculate() {
+    function calculate(save = true) {
       const q = parseFloat(document.getElementById('quantity').value) || 0; if (!q) return;
       const t = tr[currentLang] || tr['Pyc'];
       const tpi = parseToSec(document.getElementById('timePerItem').textContent), prep = isPrepActive ? 900 : 0, norm = (q * tpi) + prep;
@@ -302,8 +357,15 @@
       document.getElementById('result').innerHTML = `<div class="history-card"><div class="chart-container"><svg class="chart-svg" viewBox="0 0 160 160"><circle class="chart-bg" cx="80" cy="80" r="70" /><circle class="chart-fill" cx="80" cy="80" r="70" style="stroke:${clr}; stroke-dasharray:440; stroke-dashoffset:${off};" /></svg><div class="chart-text"><span class="chart-percent" style="color:${clr}">${eff}%</span><span class="chart-label">${t.stats.success}</span></div></div><div class="status-alert ${alrt}">${t.stats.zone} <b>${zn}</b><br>${msg}</div><div class="legend"><div class="legend-item"><div class="legend-dot" style="background:#f06767"></div>${t.legend[0]}</div><div class="legend-item"><div class="legend-dot" style="background:#ff9800"></div>${t.legend[1]}</div><div class="legend-item"><div class="legend-dot" style="background:#3cd4a0"></div>${t.legend[2]}</div></div><div class="stat-list"><div class="stat-item"><div class="item-label"><div class="dot" style="background:#3cd4a0"></div>${t.stats.plan}</div><b>${plan}</b></div><div class="stat-item"><div class="item-label"><div class="dot" style="background:#f06767"></div>${t.stats.norm}</div><b>${formatTime(norm)}</b></div><div class="stat-item"><div class="item-label"><div class="dot" style="background:#9c27b0"></div>${t.stats.qtyPerHour}</div><b>${maxQph} шт.</b></div><div class="stat-item"><div class="item-label"><div class="dot" style="background:#ffeb3b"></div>${t.stats.forThisTime}</div><b>${neededQty} шт.</b></div><div class="stat-item"><div class="item-label"><div class="dot" style="background:#00bcd4"></div>${t.stats.spent1}</div><b>${spentPer}</b></div><div class="stat-item"><div class="item-label"><div class="dot" style="background:#4e73df"></div>${t.stats.spentNorm}</div><b>${spent}</b></div><div class="stat-item"><div class="item-label"><div class="dot" style="background:#ff9800"></div>${t.stats.fact}</div><b>${endStr}</b></div></div></div>`;
       
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      if (save) saveState();
     }
-    setLang('Pyc');
+
+    // Сохранять при вводе количества
+    document.getElementById('quantity').addEventListener('input', saveState);
+
+    // Первичная инициализация и загрузка состояния
+    setLang('Pyc', false);
+    loadState();
   </script>
 </body>
 </html>
