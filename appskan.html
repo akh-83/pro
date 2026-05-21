@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Сканер Штрихкодов</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        
+        /* Контейнер для сканера */
+        #reader-container {
+            width: 100%;
+            position: relative;
+            display: none; /* Скрыто по умолчанию */
+            border: 2px solid #3b82f6;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            background-color: #000;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        /* Сам элемент сканера */
+        #reader {
+            width: 100%;
+        }
+
+        /* Кастомная красная линия для красоты (анимируется внутри выделенной зоны) */
+        .scan-line {
+            position: absolute;
+            top: 50%;
+            left: 5%;
+            width: 90%;
+            height: 2px;
+            background-color: #ef4444;
+            box-shadow: 0 0 8px 2px rgba(239, 68, 68, 0.6);
+            transform: translateY(-50%);
+            animation: scan-vertical 1.5s infinite ease-in-out;
+            z-index: 10;
+            pointer-events: none; /* Чтобы линия не мешала кликам */
+        }
+
+        /* Анимация ходит вверх-вниз на 25px (высота нашего qrbox = 60px) */
+        @keyframes scan-vertical {
+            0% { transform: translateY(-25px); }
+            50% { transform: translateY(25px); }
+            100% { transform: translateY(-25px); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4">
+
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 mt-8 space-y-6">
+        
+        <div class="text-center">
+            <h1 class="text-2xl font-bold text-gray-800">Сканер операций</h1>
+            <p class="text-sm text-gray-500 mt-1">Наведите узкую рамку на нужный штрихкод</p>
+        </div>
+
+        <div id="status-box" class="hidden p-3 rounded-lg text-sm font-medium text-center transition-all duration-300">
+        </div>
+
+        <div class="flex flex-col gap-3">
+            <button id="start-btn" class="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-4 rounded-xl shadow-md transition-colors flex items-center justify-center gap-2 text-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h4a1 1 0 010 2H5v3a1 1 0 01-2 0V4zm14-1a1 1 0 011 1v3a1 1 0 01-2 0V5h-3a1 1 0 010-2h4zM3 20a1 1 0 011 1h4a1 1 0 010-2H5v-3a1 1 0 01-2 0v3zm14 1a1 1 0 011-1v-3a1 1 0 01-2 0v3h-3a1 1 0 010 2h4z" />
+                </svg>
+                Сканировать
+            </button>
+            <button id="stop-btn" class="hidden w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 rounded-xl transition-colors">
+                Отмена
+            </button>
+        </div>
+
+        <div id="reader-container">
+            <div id="reader"></div>
+            <div class="scan-line"></div>
+        </div>
+
+        <div class="space-y-2">
+            <label for="result-input" class="block text-sm font-medium text-gray-700">Результат сканирования:</label>
+            <div class="relative">
+                <input type="text" id="result-input" readonly placeholder="Штрихкод появится здесь..." 
+                    class="w-full pl-4 pr-12 py-4 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 font-mono text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow">
+                
+                <button id="copy-btn" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-blue-600 focus:outline-none transition-colors" title="Копировать">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const startBtn = document.getElementById('start-btn');
+            const stopBtn = document.getElementById('stop-btn');
+            const readerContainer = document.getElementById('reader-container');
+            const resultInput = document.getElementById('result-input');
+            const statusBox = document.getElementById('status-box');
+            const copyBtn = document.getElementById('copy-btn');
+
+            let html5QrCode = null;
+
+            function showStatus(message, type = 'error') {
+                statusBox.textContent = message;
+                statusBox.className = `p-3 rounded-lg text-sm font-medium text-center transition-all duration-300 block ${
+                    type === 'error' ? 'bg-red-100 text-red-700' : 
+                    type === 'success' ? 'bg-green-100 text-green-700' : 
+                    'bg-blue-100 text-blue-700'
+                }`;
+                
+                if (type === 'success') {
+                    setTimeout(() => {
+                        statusBox.classList.add('hidden');
+                        statusBox.classList.remove('block');
+                    }, 3000);
+                }
+            }
+
+            function hideStatus() {
+                statusBox.classList.add('hidden');
+                statusBox.classList.remove('block');
+            }
+
+            async function startScanning() {
+                hideStatus();
+                resultInput.value = '';
+                
+                startBtn.classList.add('hidden');
+                stopBtn.classList.remove('hidden');
+                readerContainer.style.display = 'block';
+
+                if (!html5QrCode) {
+                    html5QrCode = new Html5Qrcode("reader");
+                }
+
+                // Настройки сканера
+                const config = { 
+                    fps: 15, // Кадров в секунду
+                    
+                    // Обрезаем кадр: делаем окно сканирования узким (высота 60px),
+                    // чтобы захватывать только одну строку штрихкода.
+                    qrbox: function(viewfinderWidth, viewfinderHeight) {
+                        return {
+                            width: viewfinderWidth * 0.9, // 90% от ширины экрана
+                            height: 60                    // узкая полоса высотой 60px
+                        };
+                    },
+                    
+                    // Указываем только CODE_128 (как на вашем фото), 
+                    // чтобы исключить ложные срабатывания на текст или другие коды
+                    formatsToSupport: [ Html5QrcodeSupportedFormats.CODE_128 ]
+                };
+
+                try {
+                    await html5QrCode.start(
+                        { facingMode: "environment" }, 
+                        config, 
+                        (decodedText, decodedResult) => {
+                            // Коллбек успешного сканирования
+                            handleSuccess(decodedText);
+                        },
+                        (errorMessage) => {
+                            // Ошибки сканирования в процессе (игнорируем, так как они сыпятся пока штрихкод не найден)
+                        }
+                    );
+                } catch (err) {
+                    console.error("Ошибка запуска камеры", err);
+                    stopScanning();
+                    showStatus("Нет доступа к камере или устройство не поддерживает её.", "error");
+                }
+            }
+
+            function stopScanning() {
+                if (html5QrCode && html5QrCode.isScanning) {
+                    html5QrCode.stop().then(() => {
+                        resetUI();
+                    }).catch(err => {
+                        console.error("Ошибка при остановке сканера", err);
+                        resetUI();
+                    });
+                } else {
+                    resetUI();
+                }
+            }
+
+            function resetUI() {
+                readerContainer.style.display = 'none';
+                stopBtn.classList.add('hidden');
+                startBtn.classList.remove('hidden');
+            }
+
+            function handleSuccess(decodedText) {
+                if (navigator.vibrate) {
+                    navigator.vibrate(200);
+                }
+                
+                resultInput.value = decodedText;
+                showStatus("Штрихкод успешно отсканирован!", "success");
+                stopScanning();
+            }
+
+            startBtn.addEventListener('click', startScanning);
+            stopBtn.addEventListener('click', stopScanning);
+
+            copyBtn.addEventListener('click', () => {
+                if (!resultInput.value) return;
+                
+                try {
+                    resultInput.select();
+                    document.execCommand('copy');
+                    
+                    const originalColor = copyBtn.style.color;
+                    copyBtn.classList.remove('text-gray-400');
+                    copyBtn.classList.add('text-green-500');
+                    setTimeout(() => {
+                        copyBtn.classList.remove('text-green-500');
+                        copyBtn.classList.add('text-gray-400');
+                        window.getSelection().removeAllRanges();
+                    }, 1000);
+                    
+                } catch (err) {
+                    showStatus("Не удалось скопировать текст.", "error");
+                }
+            });
+        });
+    </script>
+</body>
+</html>
