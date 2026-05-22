@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkrawMet APP - Telegram</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0e0e0e;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Background Pattern */
+        .background-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.15;
+            z-index: 0;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        /* Header */
+        .header {
+            background-color: #17212b;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: #0088cc;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-icon svg {
+            width: 18px;
+            height: 18px;
+            fill: white;
+        }
+
+        .logo-text {
+            font-size: 20px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .download-btn {
+            background-color: #2b8fd6;
+            color: white;
+            border: none;
+            padding: 8px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .download-btn:hover {
+            background-color: #3a9ae0;
+        }
+
+        /* Main Content */
+        .main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Card */
+        .card {
+            background-color: #1c1c1e;
+            border-radius: 16px;
+            padding: 40px 32px;
+            max-width: 440px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .avatar {
+            width: 120px;
+            height: 120px;
+            background: #d4d4d4;
+            border-radius: 50%;
+            margin: 0 auto 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .avatar-text {
+            font-size: 48px;
+            font-weight: 700;
+            color: #1c1c1e;
+        }
+
+        .bot-name {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #ffffff;
+        }
+
+        .bot-username {
+            font-size: 16px;
+            color: #8e8e93;
+            margin-bottom: 20px;
+        }
+
+        .bot-description {
+            font-size: 17px;
+            color: #c4c4c4;
+            margin-bottom: 32px;
+        }
+
+        .start-btn {
+            background: #2b8fd6;
+            color: white;
+            border: none;
+            padding: 14px 48px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-bottom: 24px;
+            display: inline-block;
+        }
+
+        .start-btn:hover {
+            background-color: #3399e0;
+        }
+
+        .bottom-text {
+            font-size: 15px;
+            color: #707070;
+            line-height: 1.5;
+        }
+
+        .bottom-text strong {
+            color: #b0b0b0;
+            font-weight: 600;
+        }
+
+        /* Countdown */
+        .countdown {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #5a5a5a;
+        }
+
+        .countdown span {
+            color: #2b8fd6;
+            font-weight: 600;
+        }
+
+        /* Progress bar */
+        .progress-bar {
+            width: 100%;
+            height: 3px;
+            background: #2a2a2a;
+            border-radius: 2px;
+            margin-top: 16px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #2b8fd6;
+            width: 100%;
+            transition: width 0.1s linear;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .card {
+                padding: 32px 24px;
+            }
+
+            .bot-name {
+                font-size: 24px;
+            }
+
+            .avatar {
+                width: 100px;
+                height: 100px;
+            }
+
+            .avatar-text {
+                font-size: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-pattern"></div>
+
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 0 0-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+                </svg>
+            </div>
+            <span class="logo-text">Telegram</span>
+        </div>
+        <button class="download-btn" onclick="window.open('https://telegram.org/dl', '_blank')">DOWNLOAD</button>
+    </header>
+
+    <main class="main">
+        <div class="card">
+            <div class="avatar">
+                <span class="avatar-text">SM</span>
+            </div>
+
+            <h1 class="bot-name">SkrawMet APP</h1>
+            <div class="bot-username">@SkrawMet_bot</div>
+
+            <p class="bot-description">Appka dla pracowników</p>
+
+            <button class="start-btn" onclick="window.open('https://t.me/SkrawMet_bot', '_blank')">START BOT</button>
+
+            <p class="bottom-text">
+                If you have <strong>Telegram</strong>, you can launch <strong>SkrawMet APP</strong> right away.
+            </p>
+
+            <div class="countdown">
+                Przekierowanie za <span id="timer">15</span> sekund...
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // URL do przekierowania - zmień na swoją stronę
+        const REDIRECT_URL = 'https://t.me/SkrawMet_bot';
+        
+        let seconds = 15;
+        const totalTime = 15;
+        const timerElement = document.getElementById('timer');
+        const progressFill = document.getElementById('progressFill');
+        let interval;
+
+        function updateCountdown() {
+            seconds--;
+            timerElement.textContent = seconds;
+            
+            // Update progress bar
+            const progress = (seconds / totalTime) * 100;
+            progressFill.style.width = progress + '%';
+
+            if (seconds <= 0) {
+                clearInterval(interval);
+                window.location.href = REDIRECT_URL;
+            }
+        }
+
+        // Start countdown
+        interval = setInterval(updateCountdown, 1000);
+
+        // Also redirect on START BOT button click
+        document.querySelector('.start-btn').addEventListener('click', function() {
+            window.location.href = REDIRECT_URL;
+        });
+    </script>
+</body>
+</html>
