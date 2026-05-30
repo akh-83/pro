@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Сканер Штрихкодов</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="text/javascript" src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        
+        .scanner-slit {
+            width: 100%;
+            height: 80px;
+            position: relative;
+            overflow: hidden;
+            border-top: 2px solid #3b82f6;
+            border-bottom: 2px solid #3b82f6;
+            background-color: #000;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            z-index: 20;
+        }
+
+        .scanner-slit video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #ef4444;
+            box-shadow: 0 0 8px 2px rgba(239, 68, 68, 0.6);
+            animation: scan 2s infinite linear;
+            z-index: 30;
+        }
+
+        @keyframes scan {
+            0% { top: 0; }
+            50% { top: 78px; }
+            100% { top: 0; }
+        }
+
+        .overlay-top, .overlay-bottom {
+            position: absolute;
+            left: 0;
+            right: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 10;
+        }
+        .overlay-top { top: 0; }
+        .overlay-bottom { bottom: 0; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4">
+
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 mt-8 space-y-6">
+        
+        <div class="text-center">
+            <h1 class="text-2xl font-bold text-gray-800">Сканер</h1>
+            <p class="text-sm text-gray-500 mt-1">Наведите рамку чётко на один штрихкод</p>
+        </div>
+
+        <div id="status-box" class="hidden p-3 rounded-lg text-sm font-medium text-center transition-all duration-300">
+        </div>
+
+        <div class="flex flex-col gap-3">
+            <button id="start-btn" class="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-4 rounded-xl shadow-md transition-colors flex items-center justify-center gap-2 text-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h4a1 1 0 010 2H5v3a1 1 0 01-2 0V4zm14-1a1 1 0 011 1v3a1 1 0 01-2 0V5h-3a1 1 0 010-2h4zM3 20a1 1 0 011 1h4a1 1 0 010-2H5v-3a1 1 0 01-2 0v3zm14 1a1 1 0 011-1v-3a1 1 0 01-2 0v3h-3a1 1 0 010 2h4z" />
+                </svg>
+                Сканировать
+            </button>
+        </div>
+
+        <div class="space-y-2">
+            <label for="result-input" class="block text-sm font-medium text-gray-700">Результат сканирования:</label>
+            <div class="relative">
+                <input type="text" id="result-input" readonly placeholder="Штрихкод появится здесь..." 
+                    class="w-full pl-4 pr-12 py-4 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 font-mono text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow">
+                
+                <button id="copy-btn" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-blue-600 focus:outline-none transition-colors" title="Копировать">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="scanner-modal" class="hidden fixed inset-0 bg-transparent z-50 flex flex-col justify-center items-center">
+        
+        <div class="overlay-top" id="overlay-top"></div>
+        
+        <button id="torch-btn" class="hidden absolute top-6 right-6 bg-gray-800/80 hover:bg-gray-700 p-3 rounded-full text-white z-50 transition-colors focus:outline-none border border-gray-600 shadow-lg" title="Вкл/Выкл фонарик">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M11 2h2v5h-2V2zm4.19 3.4l1.42-1.42 1.41 1.41-1.41 1.42-1.42-1.41zM5.39 6.81L3.98 5.4 5.39 3.98l1.42 1.42-1.42 1.41zM12 9c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3zM2 13h5v2H2v-2zm15 0h5v2h-5v-2zM6.81 18.61l-1.42 1.42-1.41-1.41 1.41-1.42 1.42 1.41zm11.8 0l1.42 1.42 1.41-1.41-1.41-1.42-1.42 1.41z"/>
+            </svg>
+        </button>
+
+        <div id="scanner-slit" class="scanner-slit">
+            <video id="video" playsinline></video>
+            <div class="scan-line"></div>
+        </div>
+
+        <div class="overlay-bottom" id="overlay-bottom"></div>
+
+        <button id="stop-btn" class="absolute bottom-12 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-semibold py-3 px-8 rounded-xl transition-all shadow-lg z-50">
+            Отмена
+        </button>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const startBtn = document.getElementById('start-btn');
+            const stopBtn = document.getElementById('stop-btn');
+            const scannerModal = document.getElementById('scanner-modal');
+            const scannerSlit = document.getElementById('scanner-slit');
+            const resultInput = document.getElementById('result-input');
+            const statusBox = document.getElementById('status-box');
+            const copyBtn = document.getElementById('copy-btn');
+            const videoEl = document.getElementById('video');
+            const torchBtn = document.getElementById('torch-btn');
+            
+            const overlayTop = document.getElementById('overlay-top');
+            const overlayBottom = document.getElementById('overlay-bottom');
+
+            let codeReader = new ZXing.BrowserMultiFormatReader();
+            let isScanning = false;
+            let torchEnabled = false;
+
+            // Подгонка размеров оверлеев
+            function adjustOverlays() {
+                const rect = scannerSlit.getBoundingClientRect();
+                overlayTop.style.height = `${rect.top}px`;
+                overlayBottom.style.top = `${rect.bottom}px`;
+            }
+
+            window.addEventListener('resize', () => {
+                if(isScanning) adjustOverlays();
+            });
+
+            function showStatus(message, type = 'error') {
+                statusBox.textContent = message;
+                statusBox.className = `p-3 rounded-lg text-sm font-medium text-center transition-all duration-300 block ${
+                    type === 'error' ? 'bg-red-100 text-red-700' : 
+                    type === 'success' ? 'bg-green-100 text-green-700' : 
+                    'bg-blue-100 text-blue-700'
+                }`;
+                
+                if (type === 'success') {
+                    setTimeout(() => {
+                        statusBox.classList.add('hidden');
+                        statusBox.classList.remove('block');
+                    }, 3000);
+                }
+            }
+
+            function hideStatus() {
+                statusBox.classList.add('hidden');
+                statusBox.classList.remove('block');
+            }
+
+            async function startScanning() {
+                try {
+                    hideStatus();
+                    resultInput.value = '';
+                    isScanning = true;
+                    scannerModal.classList.remove('hidden');
+                    adjustOverlays();
+
+                    // Максимальное разрешение для лучшей четкости
+                    const constraints = {
+                        video: { 
+                            facingMode: "environment",
+                            width: { ideal: 1920 },
+                            height: { ideal: 1080 }
+                        }
+                    };
+
+                    // Используем скоростной нативный метод из твоего файла
+                    await codeReader.decodeFromConstraints(constraints, 'video', (result, err) => {
+                        if (result && isScanning) {
+                            
+                            // === АРХИТЕКТУРНАЯ МАГИЯ (СНАЙПЕР) ===
+                            // Получаем координаты найденного штрихкода на оригинальном видео
+                            const points = result.getResultPoints();
+                            if (points && points.length > 0) {
+                                const vw = videoEl.videoWidth;
+                                const vh = videoEl.videoHeight;
+                                const cw = scannerSlit.clientWidth;
+                                const ch = scannerSlit.clientHeight;
+
+                                // Высчитываем, какая часть видео сейчас видна в нашей CSS-рамке
+                                const scale = Math.max(cw / vw, ch / vh);
+                                const visibleIntrinsicH = ch / scale;
+                                const startY = (vh - visibleIntrinsicH) / 2;
+                                const endY = startY + visibleIntrinsicH;
+
+                                // Добавляем небольшую зону погрешности, чтобы не отсекать код, если рука дрогнула
+                                const margin = visibleIntrinsicH * 0.2; 
+                                const safeStartY = startY - margin;
+                                const safeEndY = endY + margin;
+
+                                // Проверяем: все ли точки штрихкода попали в область рамки?
+                                const isInside = points.every(p => {
+                                    // Поддержка разных форматов данных ZXing
+                                    const y = typeof p.getY === 'function' ? p.getY() : p.y;
+                                    return y >= safeStartY && y <= safeEndY;
+                                });
+
+                                // Если штрихкод в рамке — берем! Если нет — игнорируем, камера сканирует дальше
+                                if (isInside) {
+                                    handleSuccess(result.text);
+                                }
+                            } else {
+                                // Фолбэк: если штрихкод не отдал точки, принимаем его как есть
+                                handleSuccess(result.text);
+                            }
+                        }
+                    });
+
+                    // Настройка фонарика и автофокуса после старта видео
+                    videoEl.addEventListener('loadedmetadata', () => {
+                        const stream = videoEl.srcObject;
+                        if (stream) {
+                            const track = stream.getVideoTracks()[0];
+                            const caps = track.getCapabilities ? track.getCapabilities() : {};
+                            
+                            if (caps.torch) {
+                                torchBtn.classList.remove('hidden');
+                            }
+
+                            // Включаем макро/автофокус, если телефон позволяет
+                            const advanced = [];
+                            if (caps.focusMode && caps.focusMode.includes('continuous')) {
+                                advanced.push({ focusMode: "continuous" });
+                            }
+                            if (advanced.length > 0) {
+                                track.applyConstraints({ advanced }).catch(() => {});
+                            }
+                        }
+                    }, { once: true });
+
+                } catch (error) {
+                    stopScanning();
+                    if (error.name === 'NotAllowedError' || error.message.includes('Permission denied')) {
+                        showStatus("Нет доступа к камере.", "error");
+                    } else {
+                        showStatus("Ошибка камеры: " + error.message, "error");
+                    }
+                }
+            }
+
+            function stopScanning() {
+                isScanning = false;
+                if (codeReader) {
+                    codeReader.reset(); // Полностью глушим камеру и процессы
+                }
+                torchBtn.classList.add('hidden');
+                scannerModal.classList.add('hidden');
+                torchEnabled = false;
+                torchBtn.classList.remove('text-yellow-400');
+                torchBtn.classList.add('text-white');
+            }
+
+            function handleSuccess(decodedText) {
+                if (navigator.vibrate) navigator.vibrate(200);
+                resultInput.value = decodedText;
+                showStatus("Штрихкод успешно отсканирован!", "success");
+                stopScanning();
+            }
+
+            // Фонарик
+            torchBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const stream = videoEl.srcObject;
+                if (stream) {
+                    const track = stream.getVideoTracks()[0];
+                    torchEnabled = !torchEnabled;
+                    track.applyConstraints({ advanced: [{ torch: torchEnabled }] }).catch(() => {});
+                    torchBtn.classList.toggle('text-yellow-400', torchEnabled);
+                    torchBtn.classList.toggle('text-white', !torchEnabled);
+                }
+            });
+
+            startBtn.addEventListener('click', startScanning);
+            stopBtn.addEventListener('click', stopScanning);
+
+            copyBtn.addEventListener('click', () => {
+                if (!resultInput.value) return;
+                try {
+                    resultInput.select();
+                    document.execCommand('copy');
+                    
+                    copyBtn.classList.remove('text-gray-400');
+                    copyBtn.classList.add('text-green-500');
+                    setTimeout(() => {
+                        copyBtn.classList.remove('text-green-500');
+                        copyBtn.classList.add('text-gray-400');
+                        window.getSelection().removeAllRanges();
+                    }, 1000);
+                } catch (err) {
+                    showStatus("Не удалось скопировать текст.", "error");
+                }
+            });
+        });
+    </script>
+</body>
+</html>
