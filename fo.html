@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Кино — Поиск</title>
+    <style>
+        /* Базовая темная палитра */
+        :root {
+            --bg-page: #1a1d24; 
+            --bg-card: #2c303a; 
+            --text-primary: #ffffff; 
+            --text-secondary: #ADB5BD; 
+            --border-color: #3F4652; 
+            --shadow-color: rgba(0, 0, 0, 0.4);
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-primary);
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Неоновые градиенты */
+        .gradient-text {
+            background: linear-gradient(90deg, #4dc0ed, #d06ffd, #f9a882);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
+            font-weight: bold;
+            display: inline-block;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        /* Градиентная кнопка-рамка */
+        .gradient-border-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 10px 24px;
+            border: 2px solid transparent;
+            border-radius: 40px; 
+            background-image: linear-gradient(var(--bg-card), var(--bg-card)), 
+                              linear-gradient(90deg, #4dc0ed, #d06ffd, #f9a882);
+            background-origin: border-box;
+            background-clip: padding-box, border-box;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        .gradient-border-btn:hover {
+            transform: scale(1.03);
+            box-shadow: 0 0 20px rgba(208, 111, 253, 0.3); 
+        }
+
+        .play-icon {
+            width: 26px;
+            height: 26px;
+        }
+
+        /* Блок поиска */
+        .search-container {
+            display: flex;
+            gap: 12px;
+            background: var(--bg-card);
+            padding: 10px 10px 10px 20px;
+            border-radius: 40px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 10px var(--shadow-color);
+            margin-bottom: 30px;
+        }
+
+        input {
+            flex-grow: 1;
+            font-size: 16px;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            outline: none;
+        }
+
+        input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        /* Список результатов */
+        .results-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .result-item {
+            background: var(--bg-card);
+            padding: 20px;
+            margin-bottom: 12px;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s;
+        }
+
+        .result-item:hover {
+            transform: translateY(-3px);
+        }
+
+        .film-info {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .film-title {
+            font-weight: bold;
+            font-size: 19px;
+            color: var(--text-primary);
+        }
+
+        .film-year {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .loader {
+            color: var(--text-secondary);
+            font-style: italic;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <svg width="0" height="0" style="position: absolute;">
+        <defs>
+            <linearGradient id="iconGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#d53bf9" /> 
+                <stop offset="100%" stop-color="#7366ff" /> 
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <h1><span class="gradient-text">🎬 Поиск Кино</span></h1>
+
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Например: Матрица">
+        <button class="gradient-border-btn" onclick="searchKinopoisk()" style="padding: 10px 30px;">
+            <span class="gradient-text" style="font-size: 16px;">Найти</span>
+        </button>
+    </div>
+
+    <ul id="resultsList" class="results-list"></ul>
+
+    <script>
+        // Твой API ключ сохранил
+        const API_KEY = "b0ae37d0-74af-4ae7-a825-826d1c3a3bbf"; 
+
+        async function searchKinopoisk() {
+            const query = document.getElementById("searchInput").value.trim();
+            const resultsList = document.getElementById("resultsList");
+            
+            if (!query) {
+                alert("Пожалуйста, введите название фильма");
+                return;
+            }
+
+            resultsList.innerHTML = "<li class='loader'>Ищем фильмы...</li>";
+
+            const url = `https://kinopoiskapiunofficial.tech/api/v2.1/films/search-by-keyword?keyword=${encodeURIComponent(query)}&page=1`;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'X-API-KEY': API_KEY,
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (!response.ok) throw new Error(`Ошибка сервера`);
+
+                const data = await response.json();
+                resultsList.innerHTML = "";
+
+                if (!data.films || data.films.length === 0) {
+                    resultsList.innerHTML = "<li style='text-align: center;'>Ничего не найдено.</li>";
+                    return;
+                }
+
+                data.films.forEach(film => {
+                    const li = document.createElement("li");
+                    li.className = "result-item";
+                    const title = film.nameRu || film.nameEn || "Без названия";
+                    
+                    // Твоя ссылка на плеер
+                    const targetUrl = `https://kinokino.vip/film/${film.filmId}/`;
+
+                    // Изменение тут: убрал target="_blank" и rel="noopener noreferrer", теперь открывает в текущей вкладке
+                    li.innerHTML = `
+                        <div class="film-info">
+                            <span class="film-title">${title}</span>
+                            <span class="film-year">${film.year || 'Год неизвестен'}</span>
+                        </div>
+                        <a href="${targetUrl}" class="gradient-border-btn">
+                            <svg class="play-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="50" cy="50" r="40" fill="none" stroke="url(#iconGradient)" stroke-width="8"/>
+                                <path d="M38 32 L38 68 L72 50 Z" fill="none" stroke="url(#iconGradient)" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+                            </svg>
+                            <span class="gradient-text" style="font-size: 15px;">Открыть</span>
+                        </a>
+                    `;
+                    resultsList.appendChild(li);
+                });
+
+            } catch (error) {
+                resultsList.innerHTML = `<li style="color: #f9a882; text-align: center;">Ошибка! Проверьте API-ключ.</li>`;
+            }
+        }
+
+        // Поиск по нажатию клавиши Enter
+        document.getElementById('searchInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                searchKinopoisk();
+            }
+        });
+    </script>
+
+</body>
+</html>
