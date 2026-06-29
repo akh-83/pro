@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>Revolut Link Editor</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B1220;
+    --bg-2:#1A222C;
+    --card:rgba(255,255,255,0.04);
+    --card-brd:rgba(255,255,255,0.08);
+    --text:#ffffff;
+    --muted:rgba(255,255,255,0.6);
+    --blue:#4C8DFF;
+    --green:#22D38E;
+    --orange:#FF9A3D;
+    --purple:#A06BFF;
+    --pink:#FF5FA2;
+    --danger:#FF5C7A;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Inter','SF Pro Display',-apple-system,BlinkMacSystemFont,sans-serif;min-height:100%;overflow-x:hidden}
+  body{
+    background:
+      radial-gradient(1200px 600px at -10% -10%, rgba(76,141,255,0.18), transparent 60%),
+      radial-gradient(900px 500px at 110% 10%, rgba(160,107,255,0.18), transparent 60%),
+      radial-gradient(800px 500px at 50% 120%, rgba(34,211,142,0.12), transparent 60%),
+      linear-gradient(180deg,#0B1220 0%, #0E1624 50%, #0B1220 100%);
+    padding: env(safe-area-inset-top) 16px calc(28px + env(safe-area-inset-bottom));
+  }
+  .app{max-width:520px;margin:0 auto;padding-top:8px}
+
+  /* Header */
+  .header{display:flex;align-items:center;justify-content:space-between;padding:10px 4px 18px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{
+    width:44px;height:44px;border-radius:14px;
+    background:linear-gradient(135deg,#4C8DFF,#A06BFF);
+    display:grid;place-items:center;
+    box-shadow:0 10px 30px rgba(76,141,255,0.45), inset 0 1px 0 rgba(255,255,255,0.3);
+    position:relative;overflow:hidden;
+  }
+  .logo::after{content:"";position:absolute;inset:0;background:radial-gradient(60% 60% at 30% 20%, rgba(255,255,255,0.55), transparent 60%);pointer-events:none}
+  .logo svg{width:24px;height:24px;color:#fff;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3))}
+  .brand h1{font-size:17px;font-weight:800;margin:0;letter-spacing:-0.2px}
+  .brand p{font-size:12px;color:var(--muted);margin:2px 0 0}
+  .status{
+    font-size:11px;font-weight:600;color:var(--green);
+    padding:6px 10px;border-radius:999px;
+    background:rgba(34,211,142,0.12);border:1px solid rgba(34,211,142,0.25);
+    display:flex;align-items:center;gap:6px;
+  }
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);animation:pulse 1.8s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+  /* Card */
+  .card{
+    position:relative;
+    background:linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+    border:1px solid var(--card-brd);
+    border-radius:26px;
+    padding:18px;
+    margin-bottom:14px;
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    box-shadow:
+      0 20px 50px -20px rgba(0,0,0,0.6),
+      inset 0 1px 0 rgba(255,255,255,0.06);
+    overflow:hidden;
+  }
+  .card::before{
+    content:"";position:absolute;inset:-1px;border-radius:26px;padding:1px;
+    background:linear-gradient(135deg, rgba(255,255,255,0.25), rgba(255,255,255,0) 40%, rgba(255,255,255,0) 60%, rgba(255,255,255,0.15));
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;
+  }
+  .card.accent-blue::after{content:"";position:absolute;right:-60px;top:-60px;width:200px;height:200px;background:radial-gradient(closest-side,rgba(76,141,255,0.35),transparent 70%);filter:blur(10px);pointer-events:none}
+  .card.accent-green::after{content:"";position:absolute;right:-60px;top:-60px;width:200px;height:200px;background:radial-gradient(closest-side,rgba(34,211,142,0.3),transparent 70%);filter:blur(10px);pointer-events:none}
+  .card.accent-orange::after{content:"";position:absolute;left:-60px;bottom:-60px;width:200px;height:200px;background:radial-gradient(closest-side,rgba(255,154,61,0.3),transparent 70%);filter:blur(10px);pointer-events:none}
+  .card.accent-purple::after{content:"";position:absolute;left:-40px;top:-40px;width:180px;height:180px;background:radial-gradient(closest-side,rgba(160,107,255,0.3),transparent 70%);filter:blur(10px);pointer-events:none}
+  .card.accent-pink::after{content:"";position:absolute;right:-40px;bottom:-40px;width:180px;height:180px;background:radial-gradient(closest-side,rgba(255,95,162,0.3),transparent 70%);filter:blur(10px);pointer-events:none}
+
+  .card-title{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .icon3d{
+    width:44px;height:44px;border-radius:14px;display:grid;place-items:center;
+    box-shadow:0 10px 24px -8px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -4px 10px rgba(0,0,0,0.25);
+    position:relative;overflow:hidden;flex-shrink:0;
+  }
+  .icon3d::after{content:"";position:absolute;inset:0;background:radial-gradient(70% 60% at 30% 20%, rgba(255,255,255,0.55), transparent 60%);pointer-events:none}
+  .icon3d svg{width:22px;height:22px;color:#fff;position:relative;z-index:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.35))}
+  .icon-blue{background:linear-gradient(135deg,#4C8DFF,#2A5FD6)}
+  .icon-green{background:linear-gradient(135deg,#22D38E,#0FA96C)}
+  .icon-orange{background:linear-gradient(135deg,#FFB45C,#FF7A1A)}
+  .icon-purple{background:linear-gradient(135deg,#B98CFF,#7A3FE8)}
+  .icon-pink{background:linear-gradient(135deg,#FF8FC0,#E04A92)}
+  .card-title h2{font-size:15px;font-weight:700;margin:0;letter-spacing:-0.2px}
+  .card-title p{font-size:12px;color:var(--muted);margin:2px 0 0}
+
+  /* Inputs */
+  .field{margin-bottom:12px}
+  .field:last-child{margin-bottom:0}
+  .label{display:block;font-size:12px;color:var(--muted);font-weight:600;margin:0 4px 8px;letter-spacing:0.2px;text-transform:uppercase}
+  .input{
+    width:100%;
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.08);
+    color:var(--text);
+    padding:16px 16px;
+    border-radius:16px;
+    font-size:17px;font-weight:600;font-family:inherit;
+    outline:none;
+    transition:all 0.2s ease;
+  }
+  .input::placeholder{color:rgba(255,255,255,0.3)}
+  .input:focus{
+    border-color:rgba(76,141,255,0.6);
+    background:rgba(76,141,255,0.08);
+    box-shadow:0 0 0 4px rgba(76,141,255,0.15), inset 0 0 0 1px rgba(76,141,255,0.3);
+  }
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .suffix{
+    position:absolute;right:14px;top:50%;transform:translateY(-50%);
+    font-size:13px;font-weight:700;color:var(--muted);pointer-events:none;
+  }
+  .field-wrap{position:relative}
+  .field-wrap .input{padding-right:70px}
+
+  /* Currency segmented control */
+  .currency-wrap{margin-bottom:14px}
+  .currency-grid{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:6px;
+    padding:5px;
+    background:rgba(0,0,0,0.3);
+    border:1px solid rgba(255,255,255,0.06);
+    border-radius:16px;
+    position:relative;
+  }
+  .cur-btn{
+    position:relative;z-index:1;
+    border:none;cursor:pointer;
+    background:transparent;
+    color:var(--muted);
+    padding:10px 4px;
+    border-radius:12px;
+    font-family:inherit;
+    display:flex;flex-direction:column;align-items:center;gap:2px;
+    transition:color 0.25s ease;
+    outline:none;
+  }
+  .cur-btn .cur-flag{font-size:18px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3))}
+  .cur-btn .cur-code{font-size:10px;font-weight:800;letter-spacing:0.5px}
+  .cur-btn.active{
+    color:#fff;
+    background:linear-gradient(135deg, rgba(76,141,255,0.35), rgba(160,107,255,0.35));
+    box-shadow:
+      0 6px 18px -6px rgba(76,141,255,0.6),
+      inset 0 1px 0 rgba(255,255,255,0.25),
+      inset 0 0 0 1px rgba(255,255,255,0.12);
+  }
+  .cur-btn.active .cur-code{color:#fff}
+  .cur-btn:active{transform:scale(0.96)}
+
+  /* Preview */
+  .preview{
+    margin-top:14px;
+    padding:14px 16px;
+    border-radius:16px;
+    background:linear-gradient(135deg, rgba(76,141,255,0.12), rgba(160,107,255,0.12));
+    border:1px solid rgba(124,124,255,0.2);
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+  }
+  .preview .sum-label{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.3px}
+  .preview .sum-value{font-size:20px;font-weight:800;letter-spacing:-0.5px;margin-top:2px;background:linear-gradient(135deg,#fff,#c9d6ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;line-height:1.2}
+  .preview .chip{
+    font-size:11px;font-weight:700;color:#fff;
+    padding:6px 10px;border-radius:999px;
+    background:linear-gradient(135deg,#22D38E,#0FA96C);
+    box-shadow:0 6px 16px -4px rgba(34,211,142,0.5);
+    white-space:nowrap;
+  }
+
+  /* Link display */
+  .link-box{
+    background:rgba(0,0,0,0.35);
+    border:1px dashed rgba(255,255,255,0.15);
+    border-radius:16px;
+    padding:14px;
+    font-family:'SF Mono',Menlo,monospace;
+    font-size:13px;
+    color:rgba(255,255,255,0.85);
+    word-break:break-all;
+    line-height:1.5;
+    min-height:58px;
+    margin-bottom:12px;
+    transition:all 0.3s ease;
+  }
+  .link-box.active{
+    border-style:solid;
+    border-color:rgba(34,211,142,0.4);
+    background:rgba(34,211,142,0.06);
+    box-shadow:0 0 0 3px rgba(34,211,142,0.1);
+  }
+  .link-box .placeholder{color:rgba(255,255,255,0.35);font-style:italic}
+
+  /* Buttons */
+  .btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .btn{
+    position:relative;overflow:hidden;
+    border:none;cursor:pointer;
+    padding:16px;border-radius:18px;
+    font-family:inherit;font-size:15px;font-weight:700;
+    color:#fff;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    transition:transform 0.15s ease, box-shadow 0.25s ease, filter 0.2s ease;
+    box-shadow:0 14px 30px -10px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.3);
+  }
+  .btn:active{transform:translateY(1px) scale(0.98);filter:brightness(1.05)}
+  .btn::after{content:"";position:absolute;inset:0;background:radial-gradient(80% 80% at 30% 10%, rgba(255,255,255,0.35), transparent 60%);pointer-events:none}
+  .btn svg{width:18px;height:18px;position:relative;z-index:1}
+  .btn span{position:relative;z-index:1}
+  .btn-blue{background:linear-gradient(135deg,#4C8DFF,#2A5FD6);box-shadow:0 14px 30px -10px rgba(76,141,255,0.7), inset 0 1px 0 rgba(255,255,255,0.3)}
+  .btn-green{background:linear-gradient(135deg,#22D38E,#0FA96C);box-shadow:0 14px 30px -10px rgba(34,211,142,0.7), inset 0 1px 0 rgba(255,255,255,0.3)}
+  .btn-orange{background:linear-gradient(135deg,#FFB45C,#FF7A1A);box-shadow:0 14px 30px -10px rgba(255,154,61,0.7), inset 0 1px 0 rgba(255,255,255,0.3)}
+  .btn-purple{background:linear-gradient(135deg,#B98CFF,#7A3FE8);box-shadow:0 14px 30px -10px rgba(160,107,255,0.7), inset 0 1px 0 rgba(255,255,255,0.3)}
+  .btn:disabled{opacity:0.5;cursor:not-allowed}
+
+  /* Toast */
+  .toast{
+    position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);
+    background:rgba(20,28,40,0.95);
+    backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    border:1px solid rgba(255,255,255,0.12);
+    color:#fff;padding:12px 18px;border-radius:999px;
+    font-size:14px;font-weight:600;
+    display:flex;align-items:center;gap:8px;
+    box-shadow:0 20px 40px -10px rgba(0,0,0,0.6);
+    opacity:0;pointer-events:none;
+    transition:opacity 0.25s ease, transform 0.25s ease;
+    z-index:1000;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast .t-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
+
+  /* Footer */
+  .footer{text-align:center;padding:10px 0 8px;color:var(--muted);font-size:11px}
+
+  /* Animations */
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .card{animation:fadeUp 0.5s ease both}
+  .card:nth-child(2){animation-delay:0.05s}
+  .card:nth-child(3){animation-delay:0.1s}
+  .card:nth-child(4){animation-delay:0.15s}
+  .card:nth-child(5){animation-delay:0.2s}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="brand">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Revolut Link</h1>
+        <p>Редактор ссылок · Multi-currency</p>
+      </div>
+    </div>
+    <div class="status"><span class="dot"></span>Auto</div>
+  </div>
+
+  <!-- Revtag -->
+  <div class="card accent-blue">
+    <div class="card-title">
+      <div class="icon3d icon-blue">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4"/>
+          <path d="M4 21c0-4 4-7 8-7s8 3 8 7"/>
+        </svg>
+      </div>
+      <div>
+        <h2>Revolut Tag</h2>
+        <p>Ваш уникальный идентификатор</p>
+      </div>
+    </div>
+    <div class="field">
+      <label class="label" for="revtag">Revtag</label>
+      <div class="field-wrap">
+        <input id="revtag" class="input" type="text" placeholder="qs7z" autocomplete="off" spellcheck="false" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Amount -->
+  <div class="card accent-green">
+    <div class="card-title">
+      <div class="icon3d icon-green">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="2" x2="12" y2="22"/>
+          <path d="M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+      </div>
+      <div>
+        <h2>Сумма</h2>
+        <p>Основная и дробная часть</p>
+      </div>
+    </div>
+
+    <!-- Currency selector -->
+    <div class="currency-wrap">
+      <label class="label">Валюта</label>
+      <div class="currency-grid" id="curGrid">
+        <button type="button" class="cur-btn" data-cur="PLN"><span class="cur-flag">🇵🇱</span><span class="cur-code">PLN</span></button>
+        <button type="button" class="cur-btn" data-cur="EUR"><span class="cur-flag">🇪🇺</span><span class="cur-code">EUR</span></button>
+        <button type="button" class="cur-btn" data-cur="USD"><span class="cur-flag">🇺🇸</span><span class="cur-code">USD</span></button>
+        <button type="button" class="cur-btn" data-cur="UAH"><span class="cur-flag">🇺🇦</span><span class="cur-code">UAH</span></button>
+        <button type="button" class="cur-btn" data-cur="RUB"><span class="cur-flag">🇷🇺</span><span class="cur-code">RUB</span></button>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label class="label" for="zl" id="lblMajor">Основная</label>
+        <div class="field-wrap">
+          <input id="zl" class="input" type="number" inputmode="numeric" min="0" max="9999999" placeholder="68" />
+          <span class="suffix" id="sufMajor">zł</span>
+        </div>
+      </div>
+      <div class="field">
+        <label class="label" for="gr" id="lblMinor">Дробная</label>
+        <div class="field-wrap">
+          <input id="gr" class="input" type="number" inputmode="numeric" min="0" max="99" placeholder="00" />
+          <span class="suffix" id="sufMinor">gr</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="preview">
+      <div>
+        <div class="sum-label">Итого</div>
+        <div class="sum-value" id="sumPreview">0 злот 00 грош</div>
+      </div>
+      <div class="chip" id="amountChip">0 PLN</div>
+    </div>
+  </div>
+
+  <!-- Link -->
+  <div class="card accent-purple">
+    <div class="card-title">
+      <div class="icon3d icon-purple">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+        </svg>
+      </div>
+      <div>
+        <h2>Ссылка</h2>
+        <p>Готовая ссылка для оплаты</p>
+      </div>
+    </div>
+
+    <div class="link-box" id="linkBox">
+      <span class="placeholder">Заполните поля — ссылка появится здесь ✨</span>
+    </div>
+
+    <div class="btns">
+      <button class="btn btn-blue" id="btnUrl">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+        <span>URL</span>
+      </button>
+      <button class="btn btn-green" id="btnCopy">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2"/>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        <span>Копировать</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="footer">AKH© ALL RIGHTS RESERVED</div>
+</div>
+
+<div class="toast" id="toast"><span class="t-dot"></span><span id="toastText">Скопировано</span></div>
+
+<script>
+(() => {
+  const tg = window.Telegram?.WebApp;
+  if (tg) {
+    try { tg.ready(); tg.expand(); } catch(e){}
+    if (tg.setHeaderColor) { try { tg.setHeaderColor('#0B1220'); } catch(e){} }
+    if (tg.setBackgroundColor) { try { tg.setBackgroundColor('#0B1220'); } catch(e){} }
+  }
+
+  const $ = id => document.getElementById(id);
+  const revtag = $('revtag');
+  const zl = $('zl');
+  const gr = $('gr');
+  const sumPreview = $('sumPreview');
+  const amountChip = $('amountChip');
+  const linkBox = $('linkBox');
+  const btnUrl = $('btnUrl');
+  const btnCopy = $('btnCopy');
+  const toast = $('toast');
+  const toastText = $('toastText');
+  const curGrid = $('curGrid');
+  const sufMajor = $('sufMajor');
+  const sufMinor = $('sufMinor');
+  const lblMajor = $('lblMajor');
+  const lblMinor = $('lblMinor');
+
+  const STORAGE_KEY = 'revolut_link_editor_v2';
+
+  // --- Currency config ---
+  const CURRENCIES = {
+    PLN: {
+      code:'PLN',
+      major:{name:'zł', label:'Злоты', plural:['злот','злота','злот']},
+      minor:{name:'gr', label:'Гроши', plural:['грош','гроша','грош']},
+      decimals:2
+    },
+    EUR: {
+      code:'EUR',
+      major:{name:'€', label:'Евро', plural:['евро','евро','евро']},
+      minor:{name:'cent', label:'Центы', plural:['цент','цента','центов']},
+      decimals:2
+    },
+    USD: {
+      code:'USD',
+      major:{name:'$', label:'Доллары', plural:['доллар','доллара','долларов']},
+      minor:{name:'¢', label:'Центы', plural:['цент','цента','центов']},
+      decimals:2
+    },
+    UAH: {
+      code:'UAH',
+      major:{name:'₴', label:'Гривны', plural:['гривна','гривны','гривен']},
+      minor:{name:'коп', label:'Копейки', plural:['копейка','копейки','копеек']},
+      decimals:2
+    },
+    RUB: {
+      code:'RUB',
+      major:{name:'₽', label:'Рубли', plural:['рубль','рубля','рублей']},
+      minor:{name:'коп', label:'Копейки', plural:['копейка','копейки','копеек']},
+      decimals:2
+    }
+  };
+
+  let currentCurrency = 'PLN';
+
+  // --- Pluralization (ru) ---
+  function plural(n, forms){
+    n = Math.abs(n) % 100;
+    const n1 = n % 10;
+    if (n > 10 && n < 20) return forms[2];
+    if (n1 > 1 && n1 < 5) return forms[1];
+    if (n1 === 1) return forms[0];
+    return forms[2];
+  }
+
+  function pad2(n){ return String(n).padStart(2,'0'); }
+
+  function setCurrency(code){
+    if (!CURRENCIES[code]) return;
+    currentCurrency = code;
+    const cfg = CURRENCIES[code];
+    sufMajor.textContent = cfg.major.name;
+    sufMinor.textContent = cfg.minor.name;
+    lblMajor.textContent = cfg.major.label;
+    lblMinor.textContent = cfg.minor.label;
+    [...curGrid.querySelectorAll('.cur-btn')].forEach(b => {
+      b.classList.toggle('active', b.dataset.cur === code);
+    });
+    updatePreview();
+    save();
+  }
+
+  function buildAmount(){
+    const zlVal = Math.max(0, Math.min(9999999, parseInt(zl.value,10) || 0));
+    const grVal = Math.max(0, Math.min(99, parseInt(gr.value,10) || 0));
+    const amount = zlVal * 100 + grVal; // minor units
+    return { major: zlVal, minor: grVal, amount };
+  }
+
+  function formatSumText(){
+    const { major, minor } = buildAmount();
+    const cfg = CURRENCIES[currentCurrency];
+    const majorWord = plural(major, cfg.major.plural);
+    const minorWord = plural(minor, cfg.minor.plural);
+    return `${major} ${majorWord} ${pad2(minor)} ${minorWord}`;
+  }
+
+  function buildUrl(){
+    const tag = revtag.value.trim();
+    if (!tag) return '';
+    const { amount } = buildAmount();
+    return `https://revolut.me/${encodeURIComponent(tag)}?amount=${amount}&currency=${currentCurrency}`;
+  }
+
+  function updatePreview(){
+    const { amount } = buildAmount();
+    const tag = revtag.value.trim();
+
+    sumPreview.textContent = formatSumText();
+    amountChip.textContent = `${amount} ${currentCurrency}`;
+
+    if (tag){
+      const url = buildUrl();
+      linkBox.innerHTML = '';
+      const span = document.createElement('span');
+      span.textContent = url;
+      linkBox.appendChild(span);
+      linkBox.classList.add('active');
+      btnUrl.disabled = false;
+      btnCopy.disabled = false;
+    } else {
+      linkBox.innerHTML = '<span class="placeholder">Заполните поля — ссылка появится здесь ✨</span>';
+      linkBox.classList.remove('active');
+      btnUrl.disabled = true;
+      btnCopy.disabled = true;
+    }
+  }
+
+  // --- Toast ---
+  let toastTimer;
+  function showToast(text){
+    toastText.textContent = text;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=>toast.classList.remove('show'), 1800);
+    if (tg?.HapticFeedback){ try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){} }
+  }
+
+  // --- Save / Load ---
+  function save(){
+    const data = { revtag: revtag.value, zl: zl.value, gr: gr.value, currency: currentCurrency };
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e){}
+  }
+  function load(){
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data.revtag != null) revtag.value = data.revtag;
+      if (data.zl != null) zl.value = data.zl;
+      if (data.gr != null) gr.value = data.gr;
+      if (data.currency && CURRENCIES[data.currency]) currentCurrency = data.currency;
+    } catch(e){}
+  }
+
+  // --- Input restrictions ---
+  function limitDigits(el, maxLen){
+    el.addEventListener('input', () => {
+      el.value = el.value.replace(/[^\d]/g,'').slice(0, maxLen);
+    });
+  }
+  function limitRevtag(el){
+    el.addEventListener('input', () => {
+      el.value = el.value.replace(/[^a-zA-Z0-9_.-]/g,'').slice(0, 30);
+    });
+  }
+  limitRevtag(revtag);
+  limitDigits(zl, 7);
+  limitDigits(gr, 2);
+
+  // --- Events ---
+  [revtag, zl, gr].forEach(el => {
+    el.addEventListener('input', () => { updatePreview(); save(); });
+  });
+
+  curGrid.addEventListener('click', (e) => {
+    const btn = e.target.closest('.cur-btn');
+    if (!btn) return;
+    setCurrency(btn.dataset.cur);
+    if (tg?.HapticFeedback){ try { tg.HapticFeedback.selectionChanged(); } catch(e){} }
+  });
+
+  btnUrl.addEventListener('click', () => {
+    const tag = revtag.value.trim();
+    if (!tag){ showToast('Введите revtag'); return; }
+    const url = buildUrl();
+    if (tg?.openLink){ try { tg.openLink(url); return; } catch(e){} }
+    window.open(url, '_blank');
+  });
+
+  btnCopy.addEventListener('click', async () => {
+    const tag = revtag.value.trim();
+    if (!tag){ showToast('Введите revtag'); return; }
+    const url = buildUrl();
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        await navigator.clipboard.writeText(url);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = url; ta.style.position='fixed'; ta.style.opacity='0';
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+      }
+      showToast('Ссылка скопирована ✓');
+    } catch(e){
+      showToast('Не удалось скопировать');
+    }
+  });
+
+  // --- Init ---
+  load();
+  setCurrency(currentCurrency);
+  updatePreview();
+})();
+</script>
+</body>
+</html>
