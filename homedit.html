@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>App Dashboard — Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1A222C;
+    --bg-2:#141B24;
+    --surface:rgba(255,255,255,0.06);
+    --surface-2:rgba(255,255,255,0.09);
+    --border:rgba(255,255,255,0.10);
+    --text:#FFFFFF;
+    --muted:rgba(255,255,255,0.62);
+    --muted-2:rgba(255,255,255,0.40);
+    --blue:#4C8DFF;
+    --blue-2:#2F5FE0;
+    --green:#3ED598;
+    --green-2:#1FAE7A;
+    --orange:#FF9A3D;
+    --orange-2:#FF6A00;
+    --purple:#A770FF;
+    --purple-2:#7A3CFF;
+    --pink:#FF5FA2;
+    --radius:26px;
+    --radius-sm:18px;
+    --shadow:0 20px 40px -20px rgba(0,0,0,0.6);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;min-height:100%;}
+  body{
+    font-family:'Inter','SF Pro Display',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    color:var(--text);
+    background:
+      radial-gradient(1200px 800px at 85% -10%, rgba(122,60,255,0.25), transparent 60%),
+      radial-gradient(900px 700px at -10% 10%, rgba(76,141,255,0.22), transparent 60%),
+      radial-gradient(900px 700px at 50% 120%, rgba(62,213,152,0.18), transparent 60%),
+      linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+    background-attachment: fixed;
+    min-height:100vh;
+    overflow-x:hidden;
+    letter-spacing:-0.01em;
+  }
+  .app{
+    max-width:520px;
+    margin:0 auto;
+    padding:22px 18px 120px;
+  }
+
+  /* Header */
+  .header{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:18px;
+  }
+  .profile{
+    display:flex;align-items:center;gap:12px;
+  }
+  .avatar{
+    width:46px;height:46px;border-radius:50%;
+    background:linear-gradient(135deg,#FF9A3D,#FF5FA2);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:18px;color:#fff;
+    box-shadow:0 10px 24px -10px rgba(255,95,162,0.7), inset 0 2px 0 rgba(255,255,255,0.35);
+  }
+  .greet{display:flex;flex-direction:column;line-height:1.1}
+  .greet small{color:var(--muted);font-size:12px;font-weight:500}
+  .greet b{font-size:16px;font-weight:700}
+  .icon-btn{
+    width:44px;height:44px;border-radius:14px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;transition:.2s;
+    backdrop-filter:blur(10px);
+  }
+  .icon-btn:hover{background:var(--surface-2);transform:translateY(-1px)}
+  .icon-btn svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+  /* Hero */
+  .hero{
+    position:relative;
+    border-radius:var(--radius);
+    padding:22px;
+    margin-bottom:22px;
+    background:
+      linear-gradient(135deg, rgba(122,60,255,0.55), rgba(76,141,255,0.55)),
+      rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.12);
+    box-shadow:var(--shadow), inset 0 1px 0 rgba(255,255,255,0.15);
+    overflow:hidden;
+  }
+  .hero::before{
+    content:"";position:absolute;inset:-2px;border-radius:inherit;
+    background:conic-gradient(from 210deg, rgba(167,112,255,0.0), rgba(167,112,255,0.5), rgba(76,141,255,0.5), rgba(167,112,255,0.0));
+    filter:blur(18px);opacity:.6;z-index:0;
+  }
+  .hero-inner{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .hero h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-0.02em}
+  .hero p{margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:13px}
+  .hero-stats{display:flex;gap:10px;margin-top:16px}
+  .stat{
+    flex:1;padding:12px;border-radius:16px;
+    background:rgba(0,0,0,0.25);
+    border:1px solid rgba(255,255,255,0.08);
+    backdrop-filter:blur(10px);
+  }
+  .stat b{display:block;font-size:18px;font-weight:800}
+  .stat span{font-size:11px;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:.08em}
+
+  /* Section title */
+  .section-title{
+    display:flex;align-items:center;justify-content:space-between;
+    margin:4px 4px 14px;
+  }
+  .section-title h2{margin:0;font-size:18px;font-weight:700;letter-spacing:-0.01em}
+  .section-title a{font-size:13px;color:var(--muted);text-decoration:none;font-weight:600}
+
+  /* Grid */
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:14px;
+  }
+  .card{
+    position:relative;
+    border-radius:var(--radius);
+    padding:18px;
+    min-height:160px;
+    display:flex;flex-direction:column;justify-content:space-between;
+    cursor:pointer;
+    border:1px solid rgba(255,255,255,0.10);
+    backdrop-filter:blur(14px);
+    box-shadow:var(--shadow), inset 0 1px 0 rgba(255,255,255,0.12);
+    transition:transform .25s ease, box-shadow .25s ease;
+    overflow:hidden;
+  }
+  .card:hover{transform:translateY(-3px)}
+  .card:active{transform:translateY(0) scale(0.98)}
+  .card::after{
+    content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    background:radial-gradient(120% 80% at 100% 0%, rgba(255,255,255,0.22), transparent 40%);
+    mix-blend-mode:overlay;
+  }
+  .card .icon{
+    width:56px;height:56px;border-radius:18px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:30px;
+    background:rgba(0,0,0,0.25);
+    border:1px solid rgba(255,255,255,0.18);
+    box-shadow:inset 0 2px 0 rgba(255,255,255,0.35), 0 10px 20px -10px rgba(0,0,0,0.6);
+    position:relative;z-index:1;
+  }
+  .card .title{
+    font-size:15px;font-weight:700;margin:0;letter-spacing:-0.01em;
+    position:relative;z-index:1;
+  }
+  .card .desc{
+    font-size:11.5px;color:rgba(255,255,255,0.78);margin-top:4px;
+    position:relative;z-index:1;
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+    line-height:1.35;
+    font-weight:500;
+  }
+  .card .desc.empty{
+    color:rgba(255,255,255,0.55);
+    font-style:italic;
+  }
+  .card .arrow{
+    position:absolute;top:16px;right:16px;width:28px;height:28px;border-radius:10px;
+    background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.15);
+    display:flex;align-items:center;justify-content:center;z-index:1;
+  }
+  .card .arrow svg{width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+  .card .edit-btn{
+    position:absolute;bottom:14px;right:14px;width:32px;height:32px;border-radius:10px;
+    background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.18);
+    display:flex;align-items:center;justify-content:center;z-index:2;
+    cursor:pointer;transition:.2s;
+    backdrop-filter:blur(10px);
+  }
+  .card .edit-btn:hover{background:rgba(0,0,0,0.5);transform:scale(1.08)}
+  .card .edit-btn svg{width:15px;height:15px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+  /* Card gradients */
+  .c-blue{background:linear-gradient(140deg,#4C8DFF 0%, #2F5FE0 100%);box-shadow:0 20px 40px -20px rgba(76,141,255,0.6), inset 0 1px 0 rgba(255,255,255,0.2)}
+  .c-green{background:linear-gradient(140deg,#3ED598 0%, #1FAE7A 100%);box-shadow:0 20px 40px -20px rgba(62,213,152,0.6), inset 0 1px 0 rgba(255,255,255,0.2)}
+  .c-orange{background:linear-gradient(140deg,#FF9A3D 0%, #FF6A00 100%);box-shadow:0 20px 40px -20px rgba(255,154,61,0.6), inset 0 1px 0 rgba(255,255,255,0.2)}
+  .c-purple{background:linear-gradient(140deg,#A770FF 0%, #7A3CFF 100%);box-shadow:0 20px 40px -20px rgba(167,112,255,0.6), inset 0 1px 0 rgba(255,255,255,0.2)}
+  .c-pink{background:linear-gradient(140deg,#FF5FA2 0%, #E0337E 100%);box-shadow:0 20px 40px -20px rgba(255,95,162,0.6), inset 0 1px 0 rgba(255,255,255,0.2)}
+  .c-teal{background:linear-gradient(140deg,#38C7C2 0%, #1E8F8B 100%);box-shadow:0 20px 40px -20px rgba(56,199,194,0.6), inset 0 1px 0 rgba(255,255,255,0.2)}
+
+  /* Add card */
+  .card-add{
+    background:rgba(255,255,255,0.04);
+    border:1.5px dashed rgba(255,255,255,0.18);
+    color:var(--muted);
+    align-items:center;justify-content:center;
+    min-height:160px;
+    box-shadow:none;
+    backdrop-filter:blur(10px);
+  }
+  .card-add:hover{background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.28)}
+  .card-add .plus{
+    width:56px;height:56px;border-radius:18px;
+    background:linear-gradient(140deg,#4C8DFF,#7A3CFF);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 14px 30px -10px rgba(122,60,255,0.7), inset 0 2px 0 rgba(255,255,255,0.3);
+    margin-bottom:10px;
+  }
+  .card-add .plus svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:2.6;stroke-linecap:round}
+  .card-add b{font-size:14px;font-weight:700;color:#fff}
+  .card-add span{font-size:12px;color:var(--muted);margin-top:2px}
+
+  /* Empty */
+  .empty{
+    grid-column:1/-1;
+    padding:36px 20px;text-align:center;
+    border-radius:var(--radius);
+    background:rgba(255,255,255,0.03);
+    border:1px solid var(--border);
+  }
+  .empty b{display:block;font-size:15px;font-weight:700;margin-bottom:6px}
+  .empty span{font-size:13px;color:var(--muted)}
+
+  /* FAB Download */
+  .fab-wrap{
+    position:fixed;left:0;right:0;bottom:0;
+    padding:16px 18px 22px;
+    background:linear-gradient(180deg, transparent, rgba(20,27,36,0.95) 40%);
+    pointer-events:none;
+  }
+  .fab{
+    pointer-events:auto;
+    max-width:520px;margin:0 auto;
+    display:flex;gap:10px;
+  }
+  .btn{
+    flex:1;display:flex;align-items:center;justify-content:center;gap:10px;
+    padding:16px 18px;border-radius:18px;border:none;cursor:pointer;
+    font-family:inherit;font-size:15px;font-weight:700;color:#fff;
+    background:linear-gradient(140deg,#4C8DFF,#7A3CFF);
+    box-shadow:0 18px 30px -12px rgba(76,141,255,0.6), inset 0 1px 0 rgba(255,255,255,0.25);
+    transition:.2s;
+  }
+  .btn:hover{transform:translateY(-2px)}
+  .btn:active{transform:translateY(0)}
+  .btn.ghost{
+    background:rgba(255,255,255,0.06);
+    border:1px solid var(--border);
+    box-shadow:none;
+    flex:0 0 auto;padding:16px;
+  }
+  .btn svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+  /* Modal */
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(8,12,18,0.6);
+    backdrop-filter:blur(8px);
+    display:none;align-items:flex-end;justify-content:center;
+    z-index:100;
+    animation:fade .2s ease;
+  }
+  .modal-backdrop.open{display:flex}
+  .modal{
+    width:100%;max-width:520px;
+    background:linear-gradient(180deg,#202A36 0%, #171E27 100%);
+    border:1px solid var(--border);
+    border-radius:28px 28px 0 0;
+    padding:18px 18px 24px;
+    box-shadow:0 -20px 60px rgba(0,0,0,0.5);
+    animation:slide .28s cubic-bezier(.2,.8,.2,1);
+    max-height:85vh;overflow-y:auto;
+  }
+  .modal h3{margin:4px 0 4px;font-size:18px;font-weight:800}
+  .modal p{margin:0 0 14px;color:var(--muted);font-size:13px}
+  .drop{
+    display:block;
+    border:1.5px dashed rgba(255,255,255,0.18);
+    border-radius:20px;padding:22px;text-align:center;
+    background:rgba(255,255,255,0.03);
+    cursor:pointer;transition:.2s;
+  }
+  .drop:hover{background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.3)}
+  .drop .ico{
+    width:54px;height:54px;margin:0 auto 10px;border-radius:16px;
+    background:linear-gradient(140deg,#3ED598,#1FAE7A);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 14px 28px -10px rgba(62,213,152,0.6), inset 0 2px 0 rgba(255,255,255,0.3);
+  }
+  .drop .ico svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+  .drop b{display:block;font-size:14px;font-weight:700;margin-bottom:2px}
+  .drop span{display:block;font-size:12px;color:var(--muted)}
+
+  .file-list{margin-top:16px;display:flex;flex-direction:column;gap:10px}
+  .file-item{
+    display:flex;align-items:flex-start;gap:12px;
+    padding:12px;border-radius:16px;
+    background:var(--surface);
+    border:1px solid var(--border);
+  }
+  .file-item .ficon{
+    width:42px;height:42px;border-radius:12px;flex:0 0 auto;
+    display:flex;align-items:center;justify-content:center;font-size:22px;
+    background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.15);
+    margin-top:2px;
+  }
+  .file-item .fmeta{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+  .file-item input[type="text"]{
+    width:100%;background:transparent;border:none;outline:none;
+    color:#fff;font-family:inherit;font-size:14px;font-weight:600;
+    padding:2px 0;border-bottom:1px dashed transparent;
+  }
+  .file-item input[type="text"]:focus{border-bottom-color:rgba(255,255,255,0.3)}
+  .file-item textarea{
+    width:100%;background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.08);
+    outline:none;color:rgba(255,255,255,0.85);font-family:inherit;font-size:12px;
+    padding:8px 10px;border-radius:10px;resize:vertical;min-height:50px;
+    line-height:1.4;transition:.2s;
+  }
+  .file-item textarea:focus{border-color:rgba(76,141,255,0.5);background:rgba(0,0,0,0.3)}
+  .file-item textarea::placeholder{color:var(--muted-2)}
+  .file-item .fpath{font-size:10.5px;color:var(--muted-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .file-item .fdel{
+    width:34px;height:34px;border-radius:10px;flex:0 0 auto;
+    background:rgba(255,95,95,0.15);border:1px solid rgba(255,95,95,0.3);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    margin-top:2px;
+  }
+  .file-item .fdel svg{width:16px;height:16px;stroke:#ff7a7a;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+  .modal-actions{display:flex;gap:10px;margin-top:16px}
+  .modal-actions .btn{padding:14px}
+
+  /* Edit modal */
+  .edit-field{
+    width:100%;padding:14px 16px;border-radius:14px;
+    background:rgba(255,255,255,0.05);
+    border:1px solid var(--border);
+    color:#fff;font-family:inherit;font-size:15px;font-weight:600;
+    outline:none;transition:.2s;
+    margin-bottom:10px;
+  }
+  .edit-field:focus{border-color:rgba(76,141,255,0.6);background:rgba(255,255,255,0.08)}
+  .edit-textarea{
+    width:100%;padding:14px 16px;border-radius:14px;
+    background:rgba(255,255,255,0.05);
+    border:1px solid var(--border);
+    color:#fff;font-family:inherit;font-size:14px;font-weight:500;
+    outline:none;transition:.2s;resize:vertical;min-height:90px;line-height:1.4;
+  }
+  .edit-textarea:focus{border-color:rgba(76,141,255,0.6);background:rgba(255,255,255,0.08)}
+  .edit-textarea::placeholder{color:var(--muted-2)}
+  .edit-label{
+    display:block;font-size:12px;color:var(--muted);
+    font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;
+  }
+
+  /* Toast */
+  .toast{
+    position:fixed;left:50%;transform:translateX(-50%);
+    bottom:100px;
+    background:rgba(20,27,36,0.95);
+    border:1px solid var(--border);
+    color:#fff;padding:12px 18px;border-radius:14px;
+    font-size:13px;font-weight:600;
+    box-shadow:0 14px 30px rgba(0,0,0,0.4);
+    opacity:0;pointer-events:none;transition:.3s;
+    z-index:200;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px)}
+
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  @keyframes slide{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+  /* Scrollbar */
+  ::-webkit-scrollbar{width:6px;height:6px}
+  ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12);border-radius:10px}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Header -->
+  <div class="header">
+    <div class="profile">
+      <div class="avatar">A</div>
+      <div class="greet">
+        <small>Добро пожаловать 👋</small>
+        <b>Мой Дашборд</b>
+      </div>
+    </div>
+    <button class="icon-btn" id="btnInfo" title="О редакторе">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v.01M11 12h1v4h1"/></svg>
+    </button>
+  </div>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-inner">
+      <div>
+        <h1>Создай свою<br/>главную страницу</h1>
+        <p>Добавляй приложения, редактируй названия и описания, скачивай готовый HTML.</p>
+      </div>
+      <div style="font-size:44px">✨</div>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><b id="statCount">0</b><span>Приложений</span></div>
+      <div class="stat"><b id="statSize">0 KB</b><span>Размер</span></div>
+    </div>
+  </div>
+
+  <!-- Section -->
+  <div class="section-title">
+    <h2>Мои приложения</h2>
+    <a href="#" id="btnAddTop">+ Добавить</a>
+  </div>
+
+  <!-- Grid -->
+  <div class="grid" id="grid">
+    <!-- cards injected -->
+  </div>
+</div>
+
+<!-- FAB -->
+<div class="fab-wrap">
+  <div class="fab">
+    <button class="btn ghost" id="btnClear" title="Очистить">
+      <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+    </button>
+    <button class="btn" id="btnDownload">
+      <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
+      Скачать HTML
+    </button>
+  </div>
+</div>
+
+<!-- Modal: Add files -->
+<div class="modal-backdrop" id="modal">
+  <div class="modal">
+    <h3>Добавить файлы</h3>
+    <p>Выберите файлы. Для каждого можно задать название и описание — они будут отображаться на карточке.</p>
+    <label class="drop" id="drop">
+      <div class="ico">
+        <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0l-4 4m4-4l4 4M4 20h16"/></svg>
+      </div>
+      <b>Нажми, чтобы выбрать файлы</b>
+      <span>или перетащи сюда</span>
+      <input type="file" id="fileInput" multiple style="display:none"/>
+    </label>
+
+    <div class="file-list" id="fileList"></div>
+
+    <div class="modal-actions">
+      <button class="btn ghost" id="btnCancel" style="flex:1">Отмена</button>
+      <button class="btn" id="btnDone" style="flex:2">
+        <svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>
+        Готово
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Edit name + description -->
+<div class="modal-backdrop" id="editModal">
+  <div class="modal">
+    <h3>Редактировать блок</h3>
+    <p>Измените название и описание приложения.</p>
+    <label class="edit-label">Название</label>
+    <input type="text" class="edit-field" id="editName" placeholder="Название приложения" />
+    <label class="edit-label">Описание</label>
+    <textarea class="edit-textarea" id="editDesc" placeholder="Краткое описание приложения..."></textarea>
+    <div class="modal-actions">
+      <button class="btn ghost" id="editCancel" style="flex:1">Отмена</button>
+      <button class="btn" id="editSave" style="flex:2">
+        <svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>
+        Сохранить
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">Готово!</div>
+
+<script>
+/* ================== STATE ================== */
+const state = {
+  apps: [],
+  pending: [],
+  editingIndex: -1,
+};
+
+const COLORS = ['c-blue','c-green','c-orange','c-purple','c-pink','c-teal'];
+const ICONS_BY_EXT = {
+  pdf:'📄', doc:'📝', docx:'📝', txt:'📃', md:'📃',
+  png:'🖼️', jpg:'🖼️', jpeg:'🖼️', gif:'🖼️', webp:'🖼️', svg:'🎨',
+  mp3:'🎵', wav:'🎵', ogg:'🎵', m4a:'🎵',
+  mp4:'🎬', mov:'🎬', webm:'🎬', mkv:'🎬',
+  zip:'🗜️', rar:'🗜️', '7z':'🗜️',
+  html:'🌐', css:'🎨', js:'⚙️', json:'🧩',
+  xls:'📊', xlsx:'📊', csv:'📊',
+  ppt:'📽️', pptx:'📽️',
+  default:'📦'
+};
+
+function getIcon(name){
+  const ext = (name.split('.').pop()||'').toLowerCase();
+  return ICONS_BY_EXT[ext] || ICONS_BY_EXT.default;
+}
+function pickColor(i){ return COLORS[i % COLORS.length]; }
+
+/* ================== DOM ================== */
+const grid = document.getElementById('grid');
+const modal = document.getElementById('modal');
+const editModal = document.getElementById('editModal');
+const editName = document.getElementById('editName');
+const editDesc = document.getElementById('editDesc');
+const drop = document.getElementById('drop');
+const fileInput = document.getElementById('fileInput');
+const fileList = document.getElementById('fileList');
+const toast = document.getElementById('toast');
+
+document.getElementById('btnAddTop').addEventListener('click', openModal);
+document.getElementById('btnCancel').addEventListener('click', closeModal);
+document.getElementById('btnDone').addEventListener('click', commitPending);
+document.getElementById('btnDownload').addEventListener('click', downloadHTML);
+document.getElementById('btnClear').addEventListener('click', ()=>{
+  if(state.apps.length===0) return;
+  if(confirm('Удалить все приложения?')){ state.apps = []; render(); toastMsg('Очищено'); }
+});
+document.getElementById('btnInfo').addEventListener('click', ()=>{
+  toastMsg('Редактор главной страницы v1.0');
+});
+
+document.getElementById('editCancel').addEventListener('click', closeEditModal);
+document.getElementById('editSave').addEventListener('click', saveEdit);
+
+drop.addEventListener('click', ()=> fileInput.click());
+fileInput.addEventListener('change', async (e)=>{
+  const files = Array.from(e.target.files);
+  fileInput.value = '';
+  await handleFiles(files);
+});
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.background='rgba(255,255,255,0.08)'}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.background=''}));
+drop.addEventListener('drop', async e=>{
+  await handleFiles(e.dataTransfer.files);
+});
+
+modal.addEventListener('click', e=>{ if(e.target===modal) closeModal(); });
+editModal.addEventListener('click', e=>{ if(e.target===editModal) closeEditModal(); });
+
+/* ================== FILES ================== */
+function readFileAsDataURL(file){
+  return new Promise((res,rej)=>{
+    const r = new FileReader();
+    r.onload = ()=> res(r.result);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+async function handleFiles(files){
+  for(const f of files){
+    try{
+      const dataUrl = await readFileAsDataURL(f);
+      state.pending.push({
+        name: f.name.replace(/\.[^.]+$/,''),
+        description: '',
+        originalName: f.name,
+        type: f.type || 'application/octet-stream',
+        dataUrl,
+        icon: getIcon(f.name),
+        color: pickColor(state.apps.length + state.pending.length)
+      });
+    }catch(err){ console.warn(err); }
+  }
+  renderPending();
+}
+
+/* ================== RENDER ================== */
+function render(){
+  grid.innerHTML='';
+  if(state.apps.length===0){
+    grid.innerHTML = `
+      <div class="empty">
+        <b>Пока пусто 🌙</b>
+        <span>Нажми «+ Добавить», чтобы создать первый блок</span>
+      </div>`;
+  } else {
+    state.apps.forEach((app, idx)=>{
+      const el = document.createElement('div');
+      el.className = `card ${app.color}`;
+      const descHtml = app.description
+        ? `<p class="desc">${escapeHtml(app.description)}</p>`
+        : `<p class="desc empty">Нет описания</p>`;
+      el.innerHTML = `
+        <div class="arrow"><svg viewBox="0 0 24 24"><path d="M7 17L17 7M9 7h8v8"/></svg></div>
+        <div class="icon">${app.icon}</div>
+        <div>
+          <p class="title">${escapeHtml(app.name)}</p>
+          ${descHtml}
+        </div>
+        <div class="edit-btn" title="Редактировать">
+          <svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        </div>
+      `;
+      el.addEventListener('click', (e)=>{
+        if(e.target.closest('.edit-btn')) return;
+        openApp(app);
+      });
+      el.querySelector('.edit-btn').addEventListener('click', (e)=>{
+        e.stopPropagation();
+        openEditModal(idx);
+      });
+      el.addEventListener('contextmenu', e=>{
+        e.preventDefault();
+        if(confirm(`Удалить «${app.name}»?`)){
+          state.apps.splice(idx,1);
+          render();
+          toastMsg('Удалено');
+        }
+      });
+      grid.appendChild(el);
+    });
+  }
+
+  // Add card
+  const add = document.createElement('div');
+  add.className = 'card card-add';
+  add.innerHTML = `
+    <div class="plus"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+    <b>Добавить</b>
+    <span>Новый блок</span>
+  `;
+  add.addEventListener('click', openModal);
+  grid.appendChild(add);
+
+  updateStats();
+}
+
+function renderPending(){
+  fileList.innerHTML='';
+  if(state.pending.length===0){
+    fileList.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:13px;padding:10px">Файлы не выбраны</div>`;
+    return;
+  }
+  state.pending.forEach((p, i)=>{
+    const row = document.createElement('div');
+    row.className = 'file-item';
+    row.innerHTML = `
+      <div class="ficon">${p.icon}</div>
+      <div class="fmeta">
+        <input type="text" value="${escapeAttr(p.name)}" data-i="${i}" data-field="name" placeholder="Название" />
+        <textarea data-i="${i}" data-field="desc" placeholder="Описание приложения..." rows="2">${escapeHtml(p.description)}</textarea>
+        <div class="fpath">${escapeHtml(p.originalName)}</div>
+      </div>
+      <div class="fdel" data-del="${i}" title="Удалить">
+        <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </div>
+    `;
+    fileList.appendChild(row);
+  });
+  fileList.querySelectorAll('input[data-field="name"]').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      const i = +e.target.dataset.i;
+      state.pending[i].name = e.target.value || 'Без имени';
+    });
+  });
+  fileList.querySelectorAll('textarea[data-field="desc"]').forEach(ta=>{
+    ta.addEventListener('input', e=>{
+      const i = +e.target.dataset.i;
+      state.pending[i].description = e.target.value;
+    });
+  });
+  fileList.querySelectorAll('[data-del]').forEach(b=>{
+    b.addEventListener('click', e=>{
+      const i = +e.currentTarget.dataset.del;
+      state.pending.splice(i,1);
+      renderPending();
+    });
+  });
+}
+
+function updateStats(){
+  document.getElementById('statCount').textContent = state.apps.length;
+  let bytes = 0;
+  state.apps.forEach(a=>{ bytes += (a.file.dataUrl?.length||0); });
+  const kb = (bytes/1024).toFixed(1);
+  document.getElementById('statSize').textContent = bytes>1024*1024 ? (bytes/1024/1024).toFixed(1)+' MB' : kb+' KB';
+}
+
+/* ================== ACTIONS ================== */
+function openModal(){
+  state.pending = [];
+  renderPending();
+  modal.classList.add('open');
+}
+function closeModal(){
+  modal.classList.remove('open');
+  state.pending = [];
+}
+function commitPending(){
+  if(state.pending.length===0){
+    toastMsg('Выберите хотя бы один файл');
+    return;
+  }
+  state.pending.forEach((p, i)=>{
+    state.apps.push({
+      id: Date.now()+'_'+i,
+      name: p.name,
+      description: p.description,
+      icon: p.icon,
+      color: pickColor(state.apps.length),
+      file: { name: p.name, originalName: p.originalName, type: p.type, dataUrl: p.dataUrl }
+    });
+  });
+  state.pending = [];
+  closeModal();
+  render();
+  toastMsg('Добавлено: ' + state.apps.length);
+}
+
+function openApp(app){
+  try{
+    const blob = dataURLtoBlob(app.file.dataUrl);
+    const url = URL.createObjectURL(blob);
+    const w = window.open(url, '_blank');
+    if(!w){
+      const a = document.createElement('a');
+      a.href = url; a.download = app.file.originalName; a.click();
+    }
+    setTimeout(()=>URL.revokeObjectURL(url), 60000);
+  }catch(e){
+    toastMsg('Не удалось открыть файл');
+  }
+}
+
+function openEditModal(idx){
+  state.editingIndex = idx;
+  editName.value = state.apps[idx].name;
+  editDesc.value = state.apps[idx].description || '';
+  editModal.classList.add('open');
+  setTimeout(()=>editName.focus(), 100);
+}
+function closeEditModal(){
+  editModal.classList.remove('open');
+  state.editingIndex = -1;
+}
+function saveEdit(){
+  if(state.editingIndex < 0) return;
+  const newName = editName.value.trim();
+  if(!newName){
+    toastMsg('Название не может быть пустым');
+    return;
+  }
+  state.apps[state.editingIndex].name = newName;
+  state.apps[state.editingIndex].description = editDesc.value.trim();
+  closeEditModal();
+  render();
+  toastMsg('Блок обновлён ✅');
+}
+
+function dataURLtoBlob(dataUrl){
+  const [meta, b64] = dataUrl.split(',');
+  const mime = /:(.*?);/.exec(meta)[1];
+  const bin = atob(b64);
+  const len = bin.length;
+  const buf = new Uint8Array(len);
+  for(let i=0;i<len;i++) buf[i] = bin.charCodeAt(i);
+  return new Blob([buf], {type:mime});
+}
+
+/* ================== DOWNLOAD ================== */
+function downloadHTML(){
+  if(state.apps.length===0){ toastMsg('Сначала добавьте приложения'); return; }
+  const html = buildStandaloneHTML(state.apps);
+  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'my-dashboard.html';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 5000);
+  toastMsg('HTML скачан ✅');
+}
+
+function buildStandaloneHTML(apps){
+  const data = JSON.stringify(apps.map(a=>({
+    name:a.name, description:a.description||'', icon:a.icon, color:a.color,
+    file:{originalName:a.file.originalName, dataUrl:a.file.dataUrl}
+  })));
+  return `<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>My Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#1A222C;--bg2:#141B24;--border:rgba(255,255,255,0.10)}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:#fff;background:
+  radial-gradient(1200px 800px at 85% -10%, rgba(122,60,255,0.25), transparent 60%),
+  radial-gradient(900px 700px at -10% 10%, rgba(76,141,255,0.22), transparent 60%),
+  radial-gradient(900px 700px at 50% 120%, rgba(62,213,152,0.18), transparent 60%),
+  linear-gradient(180deg,var(--bg),var(--bg2));background-attachment:fixed;min-height:100vh}
+.wrap{max-width:520px;margin:0 auto;padding:22px 18px 40px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.card{position:relative;border-radius:26px;padding:18px;min-height:160px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;border:1px solid rgba(255,255,255,0.10);backdrop-filter:blur(14px);box-shadow:0 20px 40px -20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.12);transition:.25s;overflow:hidden}
+.card:hover{transform:translateY(-3px)}
+.card:active{transform:translateY(0) scale(0.98)}
+.card::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:radial-gradient(120% 80% at 100% 0%, rgba(255,255,255,0.22), transparent 40%);mix-blend-mode:overlay}
+.card .icon{width:56px;height:56px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:30px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.18);box-shadow:inset 0 2px 0 rgba(255,255,255,0.35), 0 10px 20px -10px rgba(0,0,0,0.6);position:relative;z-index:1}
+.card .title{font-size:15px;font-weight:700;margin:0;letter-spacing:-0.01em;position:relative;z-index:1}
+.card .desc{font-size:11.5px;color:rgba(255,255,255,0.78);margin-top:4px;position:relative;z-index:1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;font-weight:500}
+.card .arrow{position:absolute;top:16px;right:16px;width:28px;height:28px;border-radius:10px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;z-index:1}
+.card .arrow svg{width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.c-blue{background:linear-gradient(140deg,#4C8DFF,#2F5FE0);box-shadow:0 20px 40px -20px rgba(76,141,255,0.6), inset 0 1px 0 rgba(255,255,255,0.2)}
+.c-green{background:linear-gradient(140deg,#3ED598,#1FAE7A);box-shadow:0 20px 40px -20px rgba(62,213,152,0.6), inset 0 1px 0 rgba(255,255,255,0.2)}
+.c-orange{background:linear-gradient(140deg,#FF9A3D,#FF6A00);box-shadow:0 20px 40px -20px rgba(255,154,61,0.6), inset 0 1px 0 rgba(255,255,255,0.2)}
+.c-purple{background:linear-gradient(140deg,#A770FF,#7A3CFF);box-shadow:0 20px 40px -20px rgba(167,112,255,0.6), inset 0 1px 0 rgba(255,255,255,0.2)}
+.c-pink{background:linear-gradient(140deg,#FF5FA2,#E0337E);box-shadow:0 20px 40px -20px rgba(255,95,162,0.6), inset 0 1px 0 rgba(255,255,255,0.2)}
+.c-teal{background:linear-gradient(140deg,#38C7C2,#1E8F8B);box-shadow:0 20px 40px -20px rgba(56,199,194,0.6), inset 0 1px 0 rgba(255,255,255,0.2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="grid" id="grid"></div>
+</div>
+<script>
+const APPS = ${data};
+const grid = document.getElementById('grid');
+APPS.forEach(a=>{
+  const el = document.createElement('div');
+  el.className = 'card ' + a.color;
+  const desc = a.description ? '<p class="desc">' + a.description.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])) + '</p>' : '';
+  el.innerHTML = '<div class="arrow"><svg viewBox="0 0 24 24"><path d="M7 17L17 7M9 7h8v8"/></svg></div>'
+    + '<div class="icon">' + a.icon + '</div>'
+    + '<div><p class="title">' + a.name.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])) + '</p>'
+    + desc + '</div>';
+  el.addEventListener('click', ()=>{
+    try{
+      const parts = a.file.dataUrl.split(',');
+      const mime = /:(.*?);/.exec(parts[0])[1];
+      const bin = atob(parts[1]);
+      const buf = new Uint8Array(bin.length);
+      for(let i=0;i<bin.length;i++) buf[i]=bin.charCodeAt(i);
+      const blob = new Blob([buf],{type:mime});
+      const url = URL.createObjectURL(blob);
+      const w = window.open(url,'_blank');
+      if(!w){ const x=document.createElement('a'); x.href=url; x.download=a.file.originalName; x.click(); }
+      setTimeout(()=>URL.revokeObjectURL(url),60000);
+    }catch(e){ alert('Не удалось открыть'); }
+  });
+  grid.appendChild(el);
+});
+<\/script>
+</body>
+</html>`;
+}
+
+/* ================== UTILS ================== */
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeAttr(s){ return escapeHtml(s); }
+function toastMsg(t){
+  toast.textContent = t;
+  toast.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>toast.classList.remove('show'), 1800);
+}
+
+/* ================== INIT ================== */
+render();
+</script>
+</body>
+</html>
