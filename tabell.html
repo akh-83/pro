@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Табель</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+/* Сброс и базовые стили */
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    background:#12121e; /* Темный фон из дизайна */
+    color:#e0e0e0;
+    min-height:100vh;
+    overflow-x:hidden;
+    padding-bottom:100px; /* Отступ для нижнего меню */
+}
+.app{max-width:440px;margin:0 auto;padding:0}
+
+/* Шапка */
+.app-header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 20px 12px;
+}
+.app-header h1{font-size:20px;font-weight:600;flex:1;text-align:center;letter-spacing:0.5px}
+.hdr-icon{
+    width:38px;height:38px;border-radius:12px;
+    background:rgba(255,255,255,0.05);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;color:#9a9ab0;transition:0.2s;
+}
+.hdr-icon:active{background:rgba(255,255,255,0.1);transform:scale(0.95)}
+
+/* Карточки блоков */
+.card{
+    background:#1e1e32;
+    border:1px solid rgba(255,255,255,0.04);
+    border-radius:20px;
+    margin:0 16px 16px;
+    padding:20px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.2);
+}
+
+/* Статистика */
+.stats-block{display:flex;align-items:flex-end;gap:12px;margin-bottom:8px}
+.stats-block .big{font-size:52px;font-weight:700;color:#2ecc71;line-height:0.9}
+.stats-block .info .line1{font-size:14px;color:#9a9ab0;line-height:1.2}
+.stats-block .small{font-size:26px;font-weight:600;color:#8b8ba0;line-height:1;margin-top:12px}
+.stats-block .info .line2{font-size:13px;color:#7a7a90;margin-top:2px}
+
+/* Блок таймера */
+.timer-card{text-align:center;padding:28px 20px}
+.timer-display{font-size:56px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:2px;margin:8px 0 24px}
+.timer-sub{font-size:14px;color:#8b8ba0;margin-bottom:12px}
+.btn-timer{
+    border:none;border-radius:16px;padding:16px 48px;font-size:17px;font-weight:600;
+    cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:10px;
+    color:#fff; width: 100%; justify-content: center;
+}
+.btn-timer.start{background:linear-gradient(135deg,#2ecc71,#27ae60);box-shadow:0 6px 20px rgba(46,204,113,0.3)}
+.btn-timer.stop{background:linear-gradient(135deg,#ff5252,#e53935);box-shadow:0 6px 20px rgba(255,82,82,0.3)}
+.btn-timer:active{transform:scale(.96)}
+
+/* Заголовки секций */
+.sec-title{font-size:18px;font-weight:600;padding:4px 20px 14px;color:#fff}
+
+/* Календарь */
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.cal-header h3{font-size:16px;font-weight:500;color:#e0e0e0;text-transform:capitalize}
+.cal-btn{
+    width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.05);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;
+    transition:0.2s;
+}
+.cal-btn:active{background:rgba(255,255,255,0.1)}
+
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.cal-dn{font-size:12px;font-weight:600;color:#7a7a90;padding:8px 0;text-transform:uppercase}
+.cal-dn.we{color:#ff5252}
+
+.cal-d{
+    font-size:15px;height:42px;display:flex;align-items:center;justify-content:center;
+    border-radius:12px;cursor:pointer;position:relative;transition:all .2s;color:#b0b0c0;
+    background:rgba(255,255,255,0.02);
+}
+.cal-d:active{background:rgba(255,255,255,0.08);transform:scale(0.9)}
+.cal-d.empty{background:transparent;cursor:default;pointer-events:none}
+.cal-d.we{color:#ff5252}
+.cal-d.today{background:rgba(74,125,255,0.2);color:#4a7dff;font-weight:700; border: 1px solid rgba(74,125,255,0.4)}
+.cal-d.worked{background:rgba(46,204,113,0.15);color:#2ecc71;font-weight:700;}
+.cal-d.tracking{
+    background:rgba(255,171,64,0.2);color:#ffab40;font-weight:700;
+    animation:pulse 2s infinite; border: 1px solid rgba(255,171,64,0.5);
+}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,171,64,0.4)}50%{box-shadow:0 0 0 6px rgba(255,171,64,0)}}
+
+/* Список записей */
+.entry-row{
+    display:flex;align-items:center;
+    background:#1e1e32; border:1px solid rgba(255,255,255,0.04);
+    border-radius:16px; margin:0 16px 12px; padding:16px;
+    cursor:pointer; transition:all .2s;
+}
+.entry-row:active{transform:scale(0.98); background:#25253d}
+.entry-date{font-size:14px;color:#9a9ab0;flex:0 0 auto;min-width:90px}
+.entry-hours{font-size:20px;font-weight:700;color:#2ecc71;flex:1;text-align:center}
+.entry-times{text-align:right;font-size:13px;color:#9a9ab0;line-height:1.5}
+
+/* Круговой прогресс */
+.progress-wrap{display:flex;align-items:center;gap:24px;padding:10px 0}
+.prog-ring{position:relative;width:120px;height:120px;flex-shrink:0}
+.prog-ring svg{transform:rotate(-90deg)}
+.prog-ring .bg{stroke:rgba(255,255,255,0.05);fill:none}
+.prog-ring .fg{fill:none;stroke-linecap:round;transition:stroke-dashoffset 1s ease-out}
+.prog-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.prog-pct{font-size:28px;font-weight:700;color:#fff}
+.prog-lbl{font-size:11px;color:#7a7a90;margin-top:2px}
+.prog-info .pi{margin-bottom:12px}
+.prog-info .pi:last-child{margin-bottom:0}
+.prog-info .pi .pl{font-size:12px;color:#7a7a90;margin-bottom:2px}
+.prog-info .pi .pv{font-size:18px;font-weight:700}
+.prog-info .pi .pv.green{color:#2ecc71}
+.prog-info .pi .pv.gray{color:#9a9ab0}
+.prog-info .pi .pv.blue{color:#4a7dff}
+
+/* Нижняя навигация */
+.bottom-nav{
+    position:fixed;bottom:0;left:0;right:0;
+    background:rgba(25,25,42,0.9); backdrop-filter:blur(10px);
+    border-top:1px solid rgba(255,255,255,0.05);
+    display:flex;align-items:center;justify-content:space-around;
+    padding:10px 0 calc(env(safe-area-inset-bottom, 16px) + 10px);
+    z-index:100;
+}
+.nav-i{
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+    cursor:pointer;padding:8px 24px;border-radius:16px;color:#7a7a90;
+    transition:all .2s;
+}
+.nav-i.active{color:#4a7dff; background:rgba(74,125,255,0.1)}
+.nav-i svg{width:24px;height:24px}
+.nav-i span{font-size:11px;font-weight:500}
+
+/* Плавающая кнопка добавления */
+.fab{
+    position:fixed;bottom:calc(env(safe-area-inset-bottom, 16px) + 40px);left:50%;
+    transform:translateX(-50%);
+    width:60px;height:60px;border-radius:50%;
+    background:linear-gradient(135deg,#4a7dff,#3b66df);
+    color:#fff;border:none;font-size:32px;font-weight:300;
+    cursor:pointer;box-shadow:0 8px 24px rgba(74,125,255,0.4);
+    display:flex;align-items:center;justify-content:center;
+    z-index:101;transition:all .2s;
+}
+.fab:active{transform:translateX(-50%) scale(.9)}
+
+/* Модальные окна */
+.modal-bg{
+    position:fixed;top:0;left:0;right:0;bottom:0;
+    background:rgba(0,0,0,0.7);z-index:500;
+    display:none;align-items:flex-end;justify-content:center;
+    backdrop-filter:blur(4px);
+}
+.modal-bg.show{display:flex}
+.modal-box{
+    background:#1e1e32; border-radius:24px 24px 0 0;
+    width:100%;max-width:440px; max-height:90vh;overflow-y:auto;
+    padding:16px 24px 32px;
+    animation:mslide 0.3s cubic-bezier(0.1, 0.9, 0.2, 1);
+}
+@keyframes mslide{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:48px;height:5px;background:rgba(255,255,255,0.1);border-radius:3px;margin:0 auto 20px}
+.modal-box h3{font-size:20px;font-weight:600;margin-bottom:20px; text-align:center}
+
+/* Элементы форм */
+.fg{margin-bottom:16px}
+.fg label{display:block;font-size:12px;color:#9a9ab0;margin-bottom:8px; font-weight:500}
+.fg input{
+    width:100%;padding:14px 16px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:14px;color:#fff;font-size:16px;outline:none;
+    transition:border-color .2s; font-family:inherit;
+}
+.fg input:focus{border-color:#4a7dff; background:rgba(255,255,255,0.06)}
+::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.6; cursor: pointer; }
+
+.btn-row{display:flex;gap:12px;margin-top:24px}
+.btn{
+    border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:600;
+    cursor:pointer;transition:all .2s;flex:1; display:flex; justify-content:center; align-items:center; gap:8px;
+}
+.btn:active{transform:scale(.96)}
+.btn-primary{background:#4a7dff;color:#fff}
+.btn-ghost{background:rgba(255,255,255,0.05);color:#e0e0e0}
+.btn-danger{background:rgba(255,82,82,0.15);color:#ff5252}
+
+/* Детали дня */
+.det-row{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.det-row:last-child{border:none}
+.det-row .dl{color:#9a9ab0;font-size:15px}
+.det-row .dv{font-weight:600;font-size:15px;color:#fff}
+.det-row .dv.green{color:#2ecc71; font-size:16px}
+
+/* Уведомления */
+.alert-box{position:fixed;top:20px;left:20px;right:20px;z-index:9000; pointer-events:none;}
+.alert{
+    padding:16px;border-radius:16px;margin-bottom:10px;
+    display:flex;align-items:center;gap:12px;font-size:14px;font-weight:500;
+    animation:afade .4s cubic-bezier(0.1, 0.9, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3); pointer-events:auto; backdrop-filter: blur(8px);
+}
+@keyframes afade{from{opacity:0;transform:translateY(-20px) scale(0.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+.alert-s{background:rgba(46,204,113,0.9);color:#fff;border:1px solid #2ecc71}
+.alert-e{background:rgba(255,82,82,0.9);color:#fff;border:1px solid #ff5252}
+.alert-i{background:rgba(74,125,255,0.9);color:#fff;border:1px solid #4a7dff}
+
+/* Страницы и вкладки */
+.page{display:none; animation: fadeIn 0.3s ease;}
+.page.on{display:block}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+.tabs{display:flex;gap:8px;margin-bottom:20px;padding:0 16px}
+.tab{
+    padding:10px 20px;border-radius:12px;background:rgba(255,255,255,0.05);
+    color:#9a9ab0;font-size:14px;cursor:pointer;transition:all .2s;font-weight:500; flex:1; text-align:center;
+}
+.tab.on{background:#4a7dff;color:#fff;box-shadow: 0 4px 12px rgba(74,125,255,0.3)}
+.hidden{display:none!important}
+
+/* Текст экспорта */
+.exp-pre{
+    background:rgba(0,0,0,0.4);border-radius:14px;padding:16px;
+    font-size:13px;overflow-x:auto;max-height:350px;
+    white-space:pre-wrap;font-family:monospace;margin-bottom:16px;
+    color:#b0b0c0; border: 1px solid rgba(255,255,255,0.05);
+}
+</style>
+</head>
+<body>
+
+<div class="alert-box" id="alertBox"></div>
+
+<div class="app">
+    <div class="app-header">
+        <div class="hdr-icon" onclick="togglePage()">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg>
+        </div>
+        <h1>Рабочее время</h1>
+        <div class="hdr-icon" onclick="openModal('modalInfo')">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="17"/><circle cx="12" cy="7.5" r="1.2" fill="currentColor" stroke="none"/></svg>
+        </div>
+    </div>
+
+    <div id="pageHome" class="page on">
+        <div class="card timer-card">
+            <div class="timer-sub" id="timerSub">Нажмите «Старт» чтобы начать</div>
+            <div class="timer-display" id="timerDisp">00:00:00</div>
+            <button class="btn-timer start" id="btnTimer" onclick="toggleTimer()">
+                <svg width="20" height="20" fill="currentColor" id="btnTimerIcon"><polygon points="5,3 19,10 5,17"/></svg>
+                <span id="btnTimerTxt">Старт</span>
+            </button>
+        </div>
+
+        <div class="card">
+            <div class="stats-block">
+                <div class="big" id="hMonth">0</div>
+                <div class="info"><div class="line1">за этот<br>месяц</div></div>
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:12px;margin-top:8px">
+                <div class="small" id="hLastMonth">0</div>
+                <div class="info"><div class="line2">прошлый месяц</div></div>
+            </div>
+        </div>
+
+        <div class="sec-title">Рабочие дни</div>
+        <div class="card">
+            <div class="cal-header">
+                <div class="cal-btn" onclick="chgMonth(-1)">‹</div>
+                <h3 id="calTitle"></h3>
+                <div class="cal-btn" onclick="chgMonth(1)">›</div>
+            </div>
+            <div class="cal-grid" id="calGrid"></div>
+        </div>
+
+        <div class="sec-title">Последние записи</div>
+        <div id="recentWrap"></div>
+
+        <div class="sec-title" style="margin-top: 10px;">Процент отработанного</div>
+        <div class="card">
+            <div class="progress-wrap">
+                <div class="prog-ring">
+                    <svg width="120" height="120" viewBox="0 0 120 120">
+                        <circle class="bg" cx="60" cy="60" r="52" stroke-width="10"/>
+                        <circle class="fg" id="progFg" cx="60" cy="60" r="52" stroke-width="10" stroke="url(#pgr)" stroke-dasharray="326.7" stroke-dashoffset="326.7"/>
+                        <defs><linearGradient id="pgr" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#4a7dff"/><stop offset="100%" stop-color="#2ecc71"/>
+                        </linearGradient></defs>
+                    </svg>
+                    <div class="prog-center">
+                        <div class="prog-pct" id="progPct">0%</div>
+                        <div class="prog-lbl">отработано</div>
+                    </div>
+                </div>
+                <div class="prog-info">
+                    <div class="pi">
+                        <div class="pl">За этот месяц</div>
+                        <div class="pv green" id="piThis">0 ч</div>
+                    </div>
+                    <div class="pi">
+                        <div class="pl">Сверх часы</div>
+                        <div class="pv blue" id="piOver">0 ч</div>
+                    </div>
+                    <div class="pi">
+                        <div class="pl">Общее</div>
+                        <div class="pv" style="color:#e0e0e0" id="piTotal">0 ч</div>
+                    </div>
+                    <div class="pi" style="cursor:pointer" id="piMaxWrap">
+                        <div class="pl" style="text-decoration:underline dashed; text-underline-offset:3px;">Максимум за месяц</div>
+                        <div class="pv gray" id="piMax">176 ч</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="pageHistory" class="page">
+        <div class="sec-title">История записей</div>
+        <div class="tabs">
+            <div class="tab on" onclick="filterHist('all',this)">Все</div>
+            <div class="tab" onclick="filterHist('week',this)">Неделя</div>
+            <div class="tab" onclick="filterHist('month',this)">Месяц</div>
+        </div>
+        <div id="histList"></div>
+
+        <div class="card" style="margin-top:20px">
+            <h3 style="font-size:16px; margin-bottom:16px; color:#fff">Выгрузка данных</h3>
+            <div class="fg"><label>С даты</label><input type="date" id="expFrom"></div>
+            <div class="fg"><label>По дату</label><input type="date" id="expTo"></div>
+            <div class="btn-row">
+                <button class="btn btn-primary" onclick="expMonth()">За месяц</button>
+                <button class="btn btn-ghost" onclick="expRange()">За период</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="bottom-nav">
+    <div class="nav-i active" id="navHome" onclick="goPage('home')">
+        <svg fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Главная</span>
+    </div>
+    <div style="width:60px"></div>
+    <div class="nav-i" id="navHist" onclick="goPage('history')">
+        <svg fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span>История</span>
+    </div>
+</div>
+<button class="fab" onclick="openAdd()">+</button>
+
+<div class="modal-bg" id="modalDetail" onclick="modalBgClick(event,'modalDetail')">
+    <div class="modal-box">
+        <div class="modal-handle"></div>
+        <h3 id="detTitle">Детали дня</h3>
+        <div id="detContent"></div>
+        <div class="btn-row">
+            <button class="btn btn-primary" onclick="editFromDet()" id="detEditBtn">Редактировать</button>
+            <button class="btn btn-ghost" onclick="closeModal('modalDetail')">Закрыть</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-bg" id="modalEdit" onclick="modalBgClick(event,'modalEdit')">
+    <div class="modal-box">
+        <div class="modal-handle"></div>
+        <h3 id="editTitle">Добавить запись</h3>
+        <div class="fg"><label>Дата</label><input type="date" id="edDate"></div>
+        <div class="fg"><label>Начало работы</label><input type="time" id="edStart"></div>
+        <div class="fg"><label>Окончание работы</label><input type="time" id="edEnd"></div>
+        <div id="edPreview" style="text-align:center;padding:10px 0;font-size:15px;font-weight:600;color:#2ecc71"></div>
+        <div class="btn-row">
+            <button class="btn btn-primary" onclick="saveEntry()">Сохранить</button>
+            <button class="btn btn-ghost" onclick="closeModal('modalEdit')">Отмена</button>
+        </div>
+        <button class="btn btn-danger hidden" id="btnDel" style="width:100%; margin-top:12px" onclick="delEntry()">Удалить запись</button>
+    </div>
+</div>
+
+<div class="modal-bg" id="modalInfo" onclick="modalBgClick(event,'modalInfo')">
+    <div class="modal-box">
+        <div class="modal-handle"></div>
+        <h3>О приложении</h3>
+        <p style="color:#b0b0c0;font-size:15px;line-height:1.6;margin-bottom:24px">
+            Учёт рабочего времени с автоматическим сохранением.<br><br>
+            • Нажмите <b style="color:#2ecc71">Старт</b> для отсчета времени<br>
+            • Нажимайте на дни календаря для ред.<br>
+            • Используйте <b style="color:#4a7dff">+</b> для ручного ввода
+        </p>
+        <button class="btn btn-ghost" style="width:100%" onclick="closeModal('modalInfo')">Понятно</button>
+    </div>
+</div>
+
+<div class="modal-bg" id="modalExport" onclick="modalBgClick(event,'modalExport')">
+    <div class="modal-box">
+        <div class="modal-handle"></div>
+        <h3>Выгрузка</h3>
+        <pre class="exp-pre" id="expContent"></pre>
+        <div class="btn-row">
+            <button class="btn btn-primary" onclick="copyExp()">Копировать</button>
+            <button class="btn btn-ghost" onclick="closeModal('modalExport')">Закрыть</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// --- Инициализация Telegram Mini App ---
+const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+if(tg){
+    tg.ready();
+    tg.expand();
+    try{ tg.setHeaderColor('#12121e'); tg.setBackgroundColor('#12121e'); } catch(e){}
+}
+
+// --- Данные приложения ---
+let R = {};          // Записи: { "2023-10-25": [{start:"09:00",end:"18:00"}] }
+let CT = null;       // Таймер: {startTime: 169...}
+let CY, CM;          // Текущий год и месяц для календаря
+let editKey = null;  // Дата, которую мы сейчас редактируем
+let detKey = null;   // Дата в модальном окне деталей
+let tmrIv = null;    // Интервал таймера
+
+const MN = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const DN = ['ПН','ВТ','СР','ЧТ','ПТ','СБ','ВС'];
+const NORM = 176;    // Норма часов в месяц
+
+// --- Ключевая система Сохранения / Загрузки (Исправлена) ---
+// Сохраняем сразу в localStorage для быстрой работы UI, и дублируем в CloudStorage в фоне
+function saveData(callback) {
+    const dataStr = JSON.stringify({ R, CT });
+    
+    // 1. Быстрое локальное сохранение
+    localStorage.setItem('tabel_data_v3', dataStr);
+    
+    // 2. Моментальный вызов callback (чтобы интерфейс обновился сразу, без зависаний)
+    if(callback) callback();
+    
+    // 3. Фоновое сохранение в Telegram Cloud (если доступно)
+    if(tg && tg.CloudStorage) {
+        tg.CloudStorage.setItem('tabel_data_v3', dataStr, (err, success) => {
+            // Ошибки игнорируем, т.к. локальная копия уже сохранена
+        });
+    }
+}
+
+function loadData(callback) {
+    // 1. Пытаемся быстро загрузить из localStorage
+    const localData = localStorage.getItem('tabel_data_v3');
+    if (localData) {
+        try {
+            const parsed = JSON.parse(localData);
+            R = parsed.R || {};
+            CT = parsed.CT || null;
+        } catch(e) {}
+    }
+    
+    // 2. Вызываем callback сразу, чтобы отрисовать UI
+    if(callback) callback();
+    
+    // 3. Пытаемся подтянуть данные из облака (если зашли с другого устройства)
+    if (tg && tg.CloudStorage) {
+        tg.CloudStorage.getItem('tabel_data_v3', (err, val) => {
+            if (!err && val && val !== localData) {
+                try {
+                    const parsed = JSON.parse(val);
+                    R = parsed.R || {};
+                    CT = parsed.CT || null;
+                    localStorage.setItem('tabel_data_v3', val); // обновляем локальный кеш
+                    renderAll(); // Перерисовываем интерфейс с новыми данными
+                    if(CT && !tmrIv) runTimerDisplay();
+                } catch(e) {}
+            }
+        });
+    }
+}
+
+// --- Старт приложения ---
+function init() {
+    const now = new Date();
+    CY = now.getFullYear(); 
+    CM = now.getMonth();
+    
+    // Слушатели для автоподсчета часов в форме
+    document.getElementById('edStart').addEventListener('input', previewHours);
+    document.getElementById('edEnd').addEventListener('input', previewHours);
+    
+    loadData(() => {
+        renderAll();
+        if(CT) runTimerDisplay();
+    });
+}
+
+// --- Хелперы ---
+function dk(y, m, d) { return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+function fmtD(k) { const p = k.split('-'); return `${p[2]}.${p[1]}.${p[0]}`; }
+function calcH(s, e) {
+    const [sh, sm] = s.split(':').map(Number);
+    const [eh, em] = e.split(':').map(Number);
+    let diff = (eh * 60 + em) - (sh * 60 + sm);
+    if(diff < 0) diff += 1440; // Переход через полночь
+    return diff / 60;
+}
+function sumMonth(prefix) {
+    let t = 0;
+    Object.keys(R).forEach(k => {
+        if(k.startsWith(prefix)) R[k].forEach(r => t += calcH(r.start, r.end));
+    });
+    return t;
+}
+
+function getStatsForMonth(year, month) {
+    let normal = 0, over = 0;
+    const prefix = `${year}-${String(month+1).padStart(2,'0')}`;
+    
+    Object.keys(R).forEach(k => {
+        if(k.startsWith(prefix)) {
+            const [y, m, d] = k.split('-');
+            const day = new Date(+y, +m-1, +d).getDay();
+            const isWe = (day === 0 || day === 6); // 0 = Вс, 6 = Сб
+            
+            let dayH = 0;
+            R[k].forEach(r => dayH += calcH(r.start, r.end));
+            
+            if(isWe) over += dayH;
+            else normal += dayH;
+        }
+    });
+    
+    return { normal, over, total: normal + over };
+}
+
+// --- Отрисовка UI ---
+function renderAll() {
+    renderCal();
+    renderStats();
+    renderRecent();
+    renderProg();
+    renderHist('all'); // Обновляем и историю тоже
+}
+
+function renderCal() {
+    const now = new Date();
+    document.getElementById('calTitle').textContent = `${MN[CM]} ${CY}`;
+    const grid = document.getElementById('calGrid');
+    grid.innerHTML = '';
+    
+    DN.forEach((d, i) => {
+        const el = document.createElement('div');
+        el.className = 'cal-dn' + (i >= 5 ? ' we' : '');
+        el.textContent = d;
+        grid.appendChild(el);
+    });
+    
+    const firstDay = new Date(CY, CM, 1);
+    let startOffset = firstDay.getDay() - 1;
+    if (startOffset < 0) startOffset = 6;
+    
+    for (let i = 0; i < startOffset; i++) {
+        const el = document.createElement('div');
+        el.className = 'cal-d empty';
+        grid.appendChild(el);
+    }
+    
+    const daysInMonth = new Date(CY, CM + 1, 0).getDate();
+    for (let d = 1; d <= daysInMonth; d++) {
+        const el = document.createElement('div');
+        const k = dk(CY, CM, d);
+        const isToday = (CY === now.getFullYear() && CM === now.getMonth() && d === now.getDate());
+        const isWeekend = ((startOffset + d - 1) % 7) >= 5;
+        const hasRecords = R[k] && R[k].length > 0;
+        const isTracking = (CT && isToday);
+        
+        let classes = 'cal-d';
+        if (isWeekend) classes += ' we';
+        if (isTracking) classes += ' tracking';
+        else if (hasRecords) classes += ' worked';
+        else if (isToday) classes += ' today';
+        
+        el.className = classes;
+        el.textContent = d;
+        el.onclick = () => dayClick(CY, CM, d);
+        grid.appendChild(el);
+    }
+}
+
+function chgMonth(dir) {
+    CM += dir;
+    if (CM > 11) { CM = 0; CY++; }
+    if (CM < 0) { CM = 11; CY--; }
+    renderCal();
+}
+
+function renderStats() {
+    const now = new Date();
+    const thisMonthPrefix = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    
+    const prevDate = new Date(now.getFullYear(), now.getMonth()-1, 1);
+    const prevMonthPrefix = `${prevDate.getFullYear()}-${String(prevDate.getMonth()+1).padStart(2,'0')}`;
+    
+    document.getElementById('hMonth').textContent = Math.round(sumMonth(thisMonthPrefix));
+    document.getElementById('hLastMonth').textContent = Math.round(sumMonth(prevMonthPrefix));
+}
+
+function renderRecent() {
+    const wrap = document.getElementById('recentWrap');
+    wrap.innerHTML = '';
+    const keys = Object.keys(R).filter(k => R[k].length > 0).sort().reverse().slice(0, 3);
+    
+    if (keys.length === 0) {
+        wrap.innerHTML = '<div style="text-align:center;color:#7a7a90;padding:20px;">Нет добавленных записей</div>';
+        return;
+    }
+    
+    keys.forEach(k => {
+        R[k].forEach(r => {
+            const h = calcH(r.start, r.end);
+            const el = document.createElement('div');
+            el.className = 'entry-row';
+            el.innerHTML = `
+                <span class="entry-date">${fmtD(k)}</span>
+                <span class="entry-hours">+ ${h.toFixed(1)} ч.</span>
+                <div class="entry-times">${r.start} - ${r.end}</div>
+            `;
+            el.onclick = () => { const p = k.split('-'); dayClick(+p[0], +p[1]-1, +p[2]); };
+            wrap.appendChild(el);
+        });
+    });
+}
+
+function renderProg() {
+    const now = new Date();
+    const cy = now.getFullYear();
+    const cm = now.getMonth();
+    const curr = getStatsForMonth(cy, cm);
+
+    // Базовая норма
+    let maxH = 176;
+    let maxName = "Базовая норма (176 ч)";
+
+    // Прочесываем историю для поиска рекорда
+    const months = new Set(Object.keys(R).map(k => k.substring(0, 7)));
+    months.forEach(m => {
+        const [y, mo] = m.split('-');
+        const stats = getStatsForMonth(+y, +mo - 1);
+        if (stats.total > maxH) {
+            maxH = stats.total;
+            maxName = `${MN[+mo - 1]} ${y} года`;
+        }
+    });
+
+    // Обновляем текст в UI
+    document.getElementById('piThis').textContent = Math.round(curr.normal) + ' ч';
+    document.getElementById('piOver').textContent = Math.round(curr.over) + ' ч';
+    document.getElementById('piTotal').textContent = Math.round(curr.total) + ' ч';
+    document.getElementById('piMax').textContent = Math.round(maxH) + ' ч';
+
+    // Слушатель для клика по максимуму
+    document.getElementById('piMaxWrap').onclick = () => {
+        showAlert(`Рекорд: ${maxName}`, 'i');
+    };
+
+    // Подсчет процентов (за 100% берем maxH)
+    const pct = Math.round((curr.total / maxH) * 100);
+    document.getElementById('progPct').textContent = pct + '%';
+
+    // Отрисовка кольца
+    const circ = 2 * Math.PI * 52;
+    const fg = document.getElementById('progFg');
+    fg.style.strokeDasharray = circ;
+    
+    // Если переработал больше рекорда (например 110%), 
+    // визуально ограничиваем круг до 100, чтобы не сломалась SVG-линия
+    const visualPct = Math.min(100, pct);
+    fg.style.strokeDashoffset = circ - ((visualPct / 100) * circ);
+}
+
+function renderHist(filterType) {
+    const list = document.getElementById('histList');
+    list.innerHTML = '';
+    let keys = Object.keys(R).filter(k => R[k].length > 0).sort().reverse();
+    const now = new Date();
+    
+    if (filterType === 'week') {
+        const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
+        keys = keys.filter(k => new Date(k) >= weekAgo);
+    } else if (filterType === 'month') {
+        const prefix = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+        keys = keys.filter(k => k.startsWith(prefix));
+    }
+    
+    if (keys.length === 0) {
+        list.innerHTML = '<div style="text-align:center;color:#7a7a90;padding:30px;">Список пуст</div>';
+        return;
+    }
+    
+    keys.forEach(k => {
+        R[k].forEach(r => {
+            const h = calcH(r.start, r.end);
+            const el = document.createElement('div');
+            el.className = 'entry-row';
+            el.style.margin = '0 0 12px 0';
+            el.innerHTML = `
+                <span class="entry-date">${fmtD(k)}</span>
+                <span class="entry-hours">${h.toFixed(1)} ч.</span>
+                <div class="entry-times">${r.start}<br>${r.end}</div>
+            `;
+            el.onclick = () => { const p = k.split('-'); dayClick(+p[0], +p[1]-1, +p[2]); };
+            list.appendChild(el);
+        });
+    });
+}
+
+function filterHist(type, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+    el.classList.add('on');
+    renderHist(type);
+}
+
+// --- Управление записями ---
+function dayClick(y, m, d) {
+    const k = dk(y, m, d);
+    detKey = k;
+    const entries = R[k] || [];
+    const content = document.getElementById('detContent');
+    
+    if (entries.length === 0) {
+        content.innerHTML = `
+            <div style="text-align:center;padding:30px 0;color:#7a7a90;">
+                <div style="font-size:40px;margin-bottom:12px;opacity:0.5">📭</div>
+                Нет рабочего времени за этот день
+            </div>`;
+        document.getElementById('detEditBtn').textContent = 'Добавить время';
+    } else {
+        let html = '';
+        entries.forEach((r, i) => {
+            const hrs = calcH(r.start, r.end);
+            html += `<div class="det-row"><span class="dl">Дата</span><span class="dv">${fmtD(k)}</span></div>`;
+            html += `<div class="det-row"><span class="dl">Смена</span><span class="dv">${r.start} - ${r.end}</span></div>`;
+            html += `<div class="det-row"><span class="dl">Отработано</span><span class="dv green">+ ${hrs.toFixed(1)} ч</span></div>`;
+            if(i < entries.length -1) html += '<div style="height:1px;background:rgba(255,255,255,0.05);margin:10px 0"></div>';
+        });
+        content.innerHTML = html;
+        document.getElementById('detEditBtn').textContent = 'Изменить';
+    }
+    
+    document.getElementById('detTitle').textContent = fmtD(k);
+    openModal('modalDetail');
+}
+
+function editFromDet() {
+    closeModal('modalDetail');
+    editKey = detKey;
+    const entries = R[detKey] || [];
+    
+    document.getElementById('edDate').value = detKey;
+    if (entries.length > 0) {
+        document.getElementById('edStart').value = entries[0].start;
+        document.getElementById('edEnd').value = entries[0].end;
+        document.getElementById('editTitle').textContent = 'Изменить запись';
+        document.getElementById('btnDel').classList.remove('hidden');
+    } else {
+        document.getElementById('edStart').value = '';
+        document.getElementById('edEnd').value = '';
+        document.getElementById('editTitle').textContent = 'Новая запись';
+        document.getElementById('btnDel').classList.add('hidden');
+    }
+    previewHours();
+    openModal('modalEdit');
+}
+
+function openAdd() {
+    editKey = null; // Флаг новой записи
+    const n = new Date();
+    document.getElementById('edDate').value = dk(n.getFullYear(), n.getMonth(), n.getDate());
+    document.getElementById('edStart').value = '';
+    document.getElementById('edEnd').value = '';
+    document.getElementById('editTitle').textContent = 'Добавить смену';
+    document.getElementById('btnDel').classList.add('hidden');
+    document.getElementById('edPreview').textContent = '';
+    openModal('modalEdit');
+}
+
+function previewHours() {
+    const s = document.getElementById('edStart').value;
+    const e = document.getElementById('edEnd').value;
+    const prev = document.getElementById('edPreview');
+    if (s && e) {
+        prev.textContent = `Итого: ${calcH(s, e).toFixed(1)} ч.`;
+    } else {
+        prev.textContent = '';
+    }
+}
+
+function saveEntry() {
+    const date = document.getElementById('edDate').value;
+    const start = document.getElementById('edStart').value;
+    const end = document.getElementById('edEnd').value;
+    
+    if (!date || !start || !end) {
+        showAlert('Пожалуйста, заполните все поля', 'e');
+        return;
+    }
+    
+    if (editKey && editKey !== date) {
+        delete R[editKey]; // Если изменили дату, удаляем старую
+    }
+    
+    // Перезаписываем или создаем
+    R[date] = [{ start, end }];
+    
+    saveData(() => {
+        renderAll();
+        closeModal('modalEdit');
+        showAlert('Время успешно сохранено', 's');
+    });
+}
+
+function delEntry() {
+    if (editKey && R[editKey]) {
+        delete R[editKey];
+        saveData(() => {
+            renderAll();
+            closeModal('modalEdit');
+            showAlert('Запись удалена', 'i');
+        });
+    }
+}
+
+// --- Работа таймера ---
+function toggleTimer() {
+    if (CT) stopTimer();
+    else startTimer();
+}
+
+function startTimer() {
+    CT = { startTime: Date.now() };
+    saveData(() => {
+        runTimerDisplay();
+        renderCal(); // Чтобы день начал пульсировать
+        showAlert('Отсчет времени начался', 's');
+    });
+}
+
+function stopTimer() {
+    if (!CT) return;
+    const st = new Date(CT.startTime);
+    const en = new Date();
+    const k = dk(st.getFullYear(), st.getMonth(), st.getDate());
+    
+    const startStr = `${String(st.getHours()).padStart(2,'0')}:${String(st.getMinutes()).padStart(2,'0')}`;
+    const endStr = `${String(en.getHours()).padStart(2,'0')}:${String(en.getMinutes()).padStart(2,'0')}`;
+    
+    if (!R[k]) R[k] = [];
+    R[k].push({ start: startStr, end: endStr });
+    
+    CT = null;
+    clearInterval(tmrIv);
+    tmrIv = null;
+    
+    updateTimerUI(false);
+    document.getElementById('timerDisp').textContent = '00:00:00';
+    document.getElementById('timerSub').textContent = 'Нажмите «Старт» чтобы начать';
+    
+    saveData(() => {
+        renderAll();
+        showAlert('Смена успешно завершена', 's');
+    });
+}
+
+function updateTimerUI(isRunning) {
+    const btn = document.getElementById('btnTimer');
+    const icon = document.getElementById('btnTimerIcon');
+    const txt = document.getElementById('btnTimerTxt');
+    
+    if (isRunning) {
+        btn.className = 'btn-timer stop';
+        icon.innerHTML = '<rect x="4" y="4" width="4" height="12" rx="1"/><rect x="12" y="4" width="4" height="12" rx="1"/>';
+        txt.textContent = 'Остановить';
+    } else {
+        btn.className = 'btn-timer start';
+        icon.innerHTML = '<polygon points="5,3 19,10 5,17"/>';
+        txt.textContent = 'Старт';
+    }
+}
+
+function runTimerDisplay() {
+    if (tmrIv) clearInterval(tmrIv);
+    updateTimerUI(true);
+    document.getElementById('timerSub').textContent = 'Смена активна. Идет отсчет...';
+    
+    const tick = () => {
+        if (!CT) return;
+        const el = Date.now() - CT.startTime;
+        const h = Math.floor(el / 3600000);
+        const m = Math.floor((el % 3600000) / 60000);
+        const s = Math.floor((el % 60000) / 1000);
+        document.getElementById('timerDisp').textContent = 
+            `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    };
+    
+    tick(); // Срабатывает моментально без задержки 1 сек
+    tmrIv = setInterval(tick, 1000);
+}
+
+// --- Навигация и Модалки ---
+function goPage(pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+    document.getElementById(pageId === 'home' ? 'pageHome' : 'pageHistory').classList.add('on');
+    
+    document.getElementById('navHome').classList.toggle('active', pageId === 'home');
+    document.getElementById('navHist').classList.toggle('active', pageId === 'history');
+    
+    if(pageId === 'history') renderHist('all');
+}
+
+function togglePage() {
+    const isHome = document.getElementById('pageHome').classList.contains('on');
+    goPage(isHome ? 'history' : 'home');
+}
+
+function openModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function modalBgClick(e, id) { if(e.target.id === id) closeModal(id); }
+
+// --- Уведомления ---
+function showAlert(msg, type) {
+    const box = document.getElementById('alertBox');
+    const alertEl = document.createElement('div');
+    alertEl.className = 'alert alert-' + type;
+    
+    const icons = { s: '✔', e: '✖', i: 'ℹ' };
+    alertEl.innerHTML = `<span style="font-size:16px">${icons[type]||'ℹ'}</span><span style="flex:1">${msg}</span>`;
+    
+    box.appendChild(alertEl);
+    setTimeout(() => {
+        alertEl.style.opacity = '0';
+        alertEl.style.transform = 'translateY(-10px)';
+        setTimeout(() => alertEl.remove(), 300);
+    }, 2500);
+}
+
+// --- Экспорт ---
+function expMonth() {
+    const now = new Date();
+    const prefix = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    const data = [];
+    Object.keys(R).sort().forEach(k => {
+        if(k.startsWith(prefix)) R[k].forEach(r => data.push({d:fmtD(k), s:r.start, e:r.end, h:calcH(r.start,r.end)}));
+    });
+    showExp(data, `${MN[now.getMonth()]} ${now.getFullYear()}`);
+}
+
+function expRange() {
+    const f = document.getElementById('expFrom').value;
+    const t = document.getElementById('expTo').value;
+    if(!f || !t) { showAlert('Укажите диапазон дат', 'e'); return; }
+    
+    const data = [];
+    Object.keys(R).sort().forEach(k => {
+        if(k >= f && k <= t) R[k].forEach(r => data.push({d:fmtD(k), s:r.start, e:r.end, h:calcH(r.start,r.end)}));
+    });
+    showExp(data, `${fmtD(f)} — ${fmtD(t)}`);
+}
+
+function showExp(data, title) {
+    let tot = 0;
+    let txt = `ТАБЕЛЬ: ${title}\n====================================\n\n`;
+    txt += `Дата          Начало    Конец     Часы\n------------------------------------\n`;
+    data.forEach(d => {
+        txt += `${d.d.padEnd(14)}${d.s.padEnd(10)}${d.e.padEnd(10)}${d.h.toFixed(1)}\n`;
+        tot += d.h;
+    });
+    txt += `------------------------------------\nИТОГО ЧАСОВ: ${tot.toFixed(1)}\nВсего смен: ${data.length}`;
+    
+    document.getElementById('expContent').textContent = txt;
+    openModal('modalExport');
+}
+
+function copyExp() {
+    const text = document.getElementById('expContent').textContent;
+    if(navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => showAlert('Текст скопирован', 's'));
+    } else {
+        const a = document.createElement('textarea');
+        a.value = text; document.body.appendChild(a); a.select();
+        document.execCommand('copy'); document.body.removeChild(a);
+        showAlert('Текст скопирован', 's');
+    }
+}
+
+// Запуск
+init();
+</script>
+</body>
+</html>
