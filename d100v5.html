@@ -1,0 +1,1935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Dice Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #1A222C;
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(99, 102, 241, 0.18) 0%, transparent 45%),
+      radial-gradient(circle at 85% 20%, rgba(236, 72, 153, 0.12) 0%, transparent 45%),
+      radial-gradient(circle at 50% 90%, rgba(34, 197, 94, 0.10) 0%, transparent 50%);
+    min-height: 100vh;
+    color: #FFFFFF;
+    padding: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    overflow-x: hidden;
+  }
+
+  .dashboard {
+    width: 100%;
+    max-width: 440px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-bottom: 32px;
+  }
+
+  .header {
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    padding: 18px 20px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(168, 85, 247, 0.25));
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 26px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .header-icon {
+    width: 44px; height: 44px; border-radius: 14px;
+    background: linear-gradient(135deg, #FFD93D, #FF6B6B);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 6px 16px rgba(255, 107, 107, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+  }
+
+  .header h1 {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #FFFFFF, #C7D2FE);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+
+  .balance-card {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.22), rgba(16, 185, 129, 0.18));
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(52, 211, 153, 0.3);
+    border-radius: 26px; padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(52, 211, 153, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    position: relative; overflow: hidden;
+  }
+
+  .balance-card::before {
+    content: ''; position: absolute; top: -50%; right: -20%;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(52, 211, 153, 0.25), transparent 70%);
+    pointer-events: none;
+  }
+
+  .balance-label {
+    font-size: 12px; font-weight: 600; color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .balance-value {
+    font-size: 28px; font-weight: 800; letter-spacing: -0.5px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .balance-value .currency {
+    font-size: 14px; font-weight: 700; color: rgba(255, 255, 255, 0.75);
+    background: rgba(255, 255, 255, 0.1); padding: 4px 10px; border-radius: 10px;
+  }
+
+  .balance-actions { display: flex; gap: 10px; margin-top: 16px; }
+
+  .balance-actions button {
+    flex: 1; padding: 12px; border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.08); color: #FFFFFF;
+    font-family: inherit; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all 0.25s ease; backdrop-filter: blur(10px);
+  }
+
+  .balance-actions button:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  .balance-actions button.withdraw {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.35), rgba(234, 88, 12, 0.25));
+    border-color: rgba(251, 146, 60, 0.4);
+  }
+
+  .balance-actions button.deposit {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.35), rgba(37, 99, 235, 0.25));
+    border-color: rgba(96, 165, 250, 0.4);
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 26px; padding: 20px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .dice-result-display { text-align: center; padding: 10px 0 16px; }
+
+  .dice-result-number {
+    font-size: 64px; font-weight: 900; letter-spacing: -2px;
+    background: linear-gradient(135deg, #FFFFFF, #C7D2FE);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    line-height: 1; transition: all 0.1s ease;
+  }
+
+  .dice-result-number.win-flash { animation: winFlash 0.3s ease; }
+  .dice-result-number.lose-flash { animation: loseFlash 0.3s ease; }
+
+  @keyframes winFlash {
+    0%, 100% { filter: drop-shadow(0 0 0 transparent); }
+    50% { filter: drop-shadow(0 0 20px rgba(52, 211, 153, 0.8)); }
+  }
+
+  @keyframes loseFlash {
+    0%, 100% { filter: drop-shadow(0 0 0 transparent); }
+    50% { filter: drop-shadow(0 0 20px rgba(248, 113, 113, 0.8)); }
+  }
+
+  .range-card {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(168, 85, 247, 0.15));
+    backdrop-filter: blur(20px); border: 1px solid rgba(167, 139, 250, 0.25);
+    border-radius: 26px; padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    position: relative;
+  }
+
+  .range-bar-container { position: relative; padding: 24px 0; }
+
+  .range-bar {
+    position: relative; height: 32px; border-radius: 12px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+
+  .bar-segments {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    display: flex; gap: 2px; padding: 0 2px;
+  }
+
+  .bar-segment { flex: 1; height: 100%; border-radius: 2px; }
+  .bar-segment.win-segment { background: #3B82F6; }
+  .bar-segment.lose-segment { background: #EF4444; }
+
+  .range-thumb {
+    position: absolute; top: 50%;
+    left: var(--thumb-pos, 50%);
+    transform: translate(-50%, -50%);
+    width: 64px; height: 40px;
+    z-index: 10; cursor: grab;
+    transition: left 0.08s cubic-bezier(0.34, 1.56, 0.64, 1);
+    filter: drop-shadow(0 4px 12px rgba(251, 191, 36, 0.6)) drop-shadow(0 0 0 3px rgba(251, 191, 36, 0.35));
+  }
+
+  .range-thumb:active {
+    cursor: grabbing;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+
+  .range-thumb svg { width: 100%; height: 100%; display: block; overflow: visible; }
+
+  .range-thumb.animating { transition: left 0.05s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+  .range-thumb.returning { transition: left 0.05s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+  .range-labels-row {
+    display: flex; justify-content: space-between;
+    font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.55);
+    margin-top: 10px; letter-spacing: 0.5px;
+  }
+
+  .range-labels-row span { position: relative; }
+  .range-labels-row span::before {
+    content: ''; position: absolute; top: -6px; left: 50%;
+    transform: translateX(-50%); width: 1px; height: 4px;
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  .mode-toggle {
+    display: flex; align-items: center; justify-content: center;
+    gap: 12px; margin-top: 14px;
+  }
+
+  .mode-btn {
+    padding: 10px 20px; border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.6);
+    font-family: inherit; font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: all 0.25s ease;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .mode-btn:hover { background: rgba(255, 255, 255, 0.1); }
+
+  .mode-btn.active {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.35), rgba(168, 85, 247, 0.3));
+    border-color: rgba(167, 139, 250, 0.5); color: #FFFFFF;
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.25);
+  }
+
+  .mode-icon { font-size: 16px; font-weight: 800; }
+
+  .payout-block {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.12), rgba(16, 185, 129, 0.08));
+    backdrop-filter: blur(20px); border: 1px solid rgba(52, 211, 153, 0.2);
+    border-radius: 22px; padding: 18px 20px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .payout-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+
+  .payout-main { flex: 1; }
+
+  .payout-label {
+    font-size: 12px; font-weight: 600; color: rgba(255, 255, 255, 0.55);
+    text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px;
+  }
+
+  .payout-value {
+    font-size: 32px; font-weight: 900; letter-spacing: -1px;
+    background: linear-gradient(135deg, #FBBF24, #F59E0B);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    line-height: 1;
+  }
+
+  .payout-value .x-mark { font-size: 24px; font-weight: 800; }
+
+  .payout-divider {
+    width: 1px; height: 50px;
+    background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+  }
+
+  .payout-stats { flex: 1.2; display: flex; flex-direction: column; gap: 10px; }
+
+  .payout-stat {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+
+  .payout-stat-label {
+    font-size: 12px; font-weight: 600; color: rgba(255, 255, 255, 0.55);
+  }
+
+  .payout-stat-value { font-size: 16px; font-weight: 800; letter-spacing: -0.3px; }
+  .payout-stat-value.win-amount { color: #34D399; }
+  .payout-stat-value.chance-amount { color: #60A5FA; }
+
+  .bet-row {
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 16px; flex-wrap: wrap;
+  }
+
+  .bet-row label {
+    font-size: 13px; font-weight: 600;
+    color: rgba(255, 255, 255, 0.75); white-space: nowrap;
+  }
+
+  .bet-input-wrap {
+    flex: 1; min-width: 120px; display: flex; align-items: center;
+    background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px; padding: 4px; transition: all 0.25s ease;
+  }
+
+  .bet-input-wrap:focus-within {
+    border-color: rgba(167, 139, 250, 0.5);
+    box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15);
+  }
+
+  .bet-input-wrap input {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: #FFFFFF; font-family: inherit; font-size: 15px; font-weight: 700;
+    padding: 10px 12px; min-width: 0;
+  }
+
+  .bet-input-wrap .unit {
+    font-size: 12px; font-weight: 700;
+    color: rgba(255, 255, 255, 0.5); padding-right: 10px;
+  }
+
+  .bet-multipliers { display: flex; gap: 6px; }
+
+  .bet-multipliers button {
+    min-width: 48px; height: 48px; border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+    color: #FFFFFF; font-family: inherit; font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s ease; padding: 0 12px;
+  }
+
+  .bet-multipliers button:hover {
+    background: linear-gradient(135deg, rgba(167, 139, 250, 0.3), rgba(99, 102, 241, 0.2));
+    border-color: rgba(167, 139, 250, 0.5); transform: translateY(-1px);
+  }
+
+  .stats-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px;
+  }
+
+  .stat-item {
+    background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px; padding: 14px;
+  }
+
+  .stat-item label {
+    display: block; font-size: 11px; font-weight: 600;
+    color: rgba(255, 255, 255, 0.55); text-transform: uppercase;
+    letter-spacing: 0.8px; margin-bottom: 6px;
+  }
+
+  .stat-item input, .stat-item .value {
+    width: 100%; background: transparent; border: none; outline: none;
+    color: #FFFFFF; font-family: inherit; font-size: 18px;
+    font-weight: 800; letter-spacing: -0.3px;
+  }
+
+  .controls-row { display: flex; gap: 10px; margin-top: 14px; }
+
+  .control-btn {
+    flex: 1; padding: 14px; border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05); color: #FFFFFF;
+    font-family: inherit; font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: all 0.25s ease;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+
+  .control-btn:hover {
+    background: rgba(255, 255, 255, 0.1); transform: translateY(-1px);
+  }
+
+  .control-btn.active {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(16, 185, 129, 0.2));
+    border-color: rgba(52, 211, 153, 0.5);
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
+  }
+
+  .roll-btn {
+    margin-top: 18px; width: 100%; padding: 18px; border-radius: 20px; border: none;
+    background: linear-gradient(135deg, #6366F1, #8B5CF6, #EC4899);
+    color: #FFFFFF; font-family: inherit; font-size: 18px;
+    font-weight: 800; letter-spacing: 0.5px; cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 30px rgba(139, 92, 246, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.1) inset, inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    position: relative; overflow: hidden;
+  }
+
+  .roll-btn::before {
+    content: ''; position: absolute; top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.6s ease;
+  }
+
+  .roll-btn:hover::before { left: 100%; }
+
+  .roll-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 40px rgba(139, 92, 246, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.15) inset, inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+
+  .roll-btn:active { transform: translateY(0); }
+
+  .history-card {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(236, 72, 153, 0.12));
+    backdrop-filter: blur(20px); border: 1px solid rgba(251, 146, 60, 0.2);
+    border-radius: 26px; padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .history-title {
+    font-size: 16px; font-weight: 800; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px; letter-spacing: -0.3px;
+  }
+
+  .history-table { width: 100%; border-collapse: separate; border-spacing: 0 6px; }
+
+  .history-table thead th {
+    font-size: 10px; font-weight: 700; color: rgba(255, 255, 255, 0.55);
+    text-transform: uppercase; letter-spacing: 1px;
+    text-align: left; padding: 6px 12px;
+  }
+
+  .history-table tbody tr {
+    background: rgba(0, 0, 0, 0.25); border-radius: 12px;
+    transition: all 0.2s ease;
+  }
+
+  .history-table tbody tr:hover {
+    background: rgba(0, 0, 0, 0.35); transform: translateX(2px);
+  }
+
+  .history-table tbody td {
+    padding: 12px; font-size: 13px; font-weight: 600;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .history-table tbody td:first-child {
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px 0 0 12px;
+  }
+
+  .history-table tbody td:last-child {
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 0 12px 12px 0; text-align: right;
+  }
+
+  .result-win { color: #34D399; font-weight: 800; }
+  .result-lose { color: #F87171; font-weight: 800; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 3px; }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .dashboard > * { animation: fadeInUp 0.5s ease backwards; }
+  .dashboard > *:nth-child(1) { animation-delay: 0.05s; }
+  .dashboard > *:nth-child(2) { animation-delay: 0.10s; }
+  .dashboard > *:nth-child(3) { animation-delay: 0.15s; }
+  .dashboard > *:nth-child(4) { animation-delay: 0.20s; }
+  .dashboard > *:nth-child(5) { animation-delay: 0.25s; }
+  .dashboard > *:nth-child(6) { animation-delay: 0.30s; }
+  .dashboard > *:nth-child(7) { animation-delay: 0.35s; }
+  .dashboard > *:nth-child(8) { animation-delay: 0.40s; }
+
+  /* ===== POPUP NOTIFICATION ===== */
+  .popup-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    padding: 20px;
+  }
+
+  .popup-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .popup-content {
+    background: linear-gradient(135deg, #1E293B, #0F172A);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 24px;
+    padding: 28px 24px;
+    max-width: 360px;
+    width: 100%;
+    box-shadow:
+      0 20px 60px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    transform: scale(0.9) translateY(20px);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    text-align: center;
+  }
+
+  .popup-overlay.active .popup-content {
+    transform: scale(1) translateY(0);
+  }
+
+  .popup-icon {
+    width: 64px; height: 64px; border-radius: 50%;
+    margin: 0 auto 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px;
+  }
+
+  .popup-icon.error {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(220, 38, 38, 0.2));
+    border: 1px solid rgba(239, 68, 68, 0.4);
+  }
+
+  .popup-icon.warning {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(245, 158, 11, 0.2));
+    border: 1px solid rgba(251, 191, 36, 0.4);
+  }
+
+  .popup-icon.success {
+    background: linear-gradient(135deg, rgba(52, 211, 153, 0.3), rgba(16, 185, 129, 0.2));
+    border: 1px solid rgba(52, 211, 153, 0.4);
+  }
+
+  .popup-title {
+    font-size: 20px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px;
+  }
+
+  .popup-message {
+    font-size: 14px; color: rgba(255, 255, 255, 0.7); line-height: 1.5; margin-bottom: 24px;
+  }
+
+  .popup-actions { display: flex; gap: 10px; }
+
+  .popup-btn {
+    flex: 1; padding: 14px 20px; border-radius: 14px; border: none;
+    font-family: inherit; font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: all 0.25s ease;
+  }
+
+  .popup-btn.primary {
+    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    color: #FFFFFF; box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
+  }
+
+  .popup-btn.primary:hover {
+    transform: translateY(-2px); box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
+  }
+
+  .popup-btn.secondary {
+    background: rgba(255, 255, 255, 0.08); color: #FFFFFF;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  .popup-btn.secondary:hover { background: rgba(255, 255, 255, 0.12); }
+
+  .popup-btn.deposit {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.4), rgba(37, 99, 235, 0.3));
+    color: #FFFFFF; border: 1px solid rgba(96, 165, 250, 0.4);
+  }
+
+  .popup-btn.deposit:hover {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.5), rgba(37, 99, 235, 0.4));
+    transform: translateY(-2px);
+  }
+
+  /* ===== AUTO ROLL SETTINGS MODAL ===== */
+  .settings-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    padding: 20px;
+  }
+
+  .settings-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .settings-modal {
+    background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 28px;
+    padding: 28px 24px;
+    max-width: 400px;
+    width: 100%;
+    box-shadow:
+      0 24px 80px rgba(0, 0, 0, 0.6),
+      0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    transform: scale(0.9) translateY(20px);
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .settings-overlay.active .settings-modal {
+    transform: scale(1) translateY(0);
+  }
+
+  .settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .settings-title {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #FFFFFF, #C7D2FE);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .settings-close {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+
+  .settings-close:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #F87171;
+  }
+
+  .settings-section {
+    margin-bottom: 20px;
+  }
+
+  .settings-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .settings-section-title::before {
+    content: '';
+    width: 3px;
+    height: 12px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, #6366F1, #8B5CF6);
+  }
+
+  /* Radio options */
+  .radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .radio-option {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.03);
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+
+  .radio-option:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.18);
+  }
+
+  .radio-option.selected {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1));
+    border-color: rgba(139, 92, 246, 0.4);
+    box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.2), 0 4px 16px rgba(139, 92, 246, 0.15);
+  }
+
+  .radio-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .radio-circle {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    background: rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.25s ease;
+  }
+
+  .radio-circle::after {
+    content: '';
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    transform: scale(0);
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .radio-option.selected .radio-circle {
+    border-color: rgba(139, 92, 246, 0.6);
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.3);
+  }
+
+  .radio-option.selected .radio-circle::after {
+    transform: scale(1);
+  }
+
+  .radio-label {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .radio-label-text {
+    font-size: 14px;
+    font-weight: 700;
+    color: #FFFFFF;
+  }
+
+  .radio-label-desc {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: 500;
+  }
+
+  .radio-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  /* Speed options */
+  .speed-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .speed-option {
+    position: relative;
+    padding: 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.04);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+
+  .speed-option:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .speed-option.selected {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.15));
+    border-color: rgba(139, 92, 246, 0.5);
+    box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.25);
+  }
+
+  .speed-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .speed-label {
+    font-size: 16px;
+    font-weight: 800;
+    color: #FFFFFF;
+    margin-bottom: 4px;
+  }
+
+  .speed-desc {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  /* Settings inputs */
+  .settings-input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    padding: 12px 14px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+  }
+
+  .settings-input-row label {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+    white-space: nowrap;
+  }
+
+  .settings-input-row input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #FFFFFF;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    text-align: right;
+    min-width: 0;
+  }
+
+  .settings-input-row .unit {
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  /* Settings footer */
+  .settings-footer {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+  }
+
+  .settings-btn {
+    flex: 1;
+    padding: 16px;
+    border-radius: 16px;
+    border: none;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .settings-btn.cancel {
+    background: rgba(255, 255, 255, 0.08);
+    color: #FFFFFF;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .settings-btn.cancel:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .settings-btn.start {
+    background: linear-gradient(135deg, #22C55E, #10B981);
+    color: #FFFFFF;
+    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.35);
+  }
+
+  .settings-btn.start:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(34, 197, 94, 0.5);
+  }
+
+  .settings-btn.stop {
+    background: linear-gradient(135deg, #EF4444, #DC2626);
+    color: #FFFFFF;
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.35);
+  }
+
+  .settings-btn.stop:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(239, 68, 68, 0.5);
+  }
+
+  /* Status indicator */
+  .auto-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .auto-status.active {
+    background: rgba(34, 197, 94, 0.15);
+    border-color: rgba(52, 211, 153, 0.3);
+    color: #34D399;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  .auto-status.active .status-dot {
+    background: #34D399;
+    box-shadow: 0 0 8px #34D399;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .stats-mini {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .stat-mini {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 10px 8px;
+    text-align: center;
+  }
+
+  .stat-mini-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  .stat-mini-value {
+    font-size: 16px;
+    font-weight: 800;
+    color: #FFFFFF;
+  }
+
+  .stat-mini-value.win { color: #34D399; }
+  .stat-mini-value.lose { color: #F87171; }
+
+  .speed-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: rgba(99, 102, 241, 0.2);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #C7D2FE;
+    margin-left: 8px;
+  }
+</style>
+</head>
+<body>
+  <div class="dashboard">
+
+    <div class="header">
+      <div class="header-icon"></div>
+      <h1>Dice Game</h1>
+    </div>
+
+    <div class="balance-card">
+      <div class="balance-label">💎 Balance</div>
+      <div class="balance-value">
+        <span id="balance">100.00</span>
+        <span class="currency">USDT</span>
+      </div>
+      <div class="balance-actions">
+        <button class="withdraw" onclick="showWithdrawPopup()">Withdraw</button>
+        <button class="deposit" onclick="showDepositPopup()">Deposit</button>
+      </div>
+    </div>
+
+    <div class="range-card" id="rangeCard">
+      <div class="dice-result-display">
+        <div class="dice-result-number" id="diceResultNumber">--</div>
+      </div>
+
+      <div class="range-bar-container" id="rangeBarContainer">
+        <div class="range-bar" id="rangeBar">
+          <div class="bar-segments" id="barSegments"></div>
+        </div>
+
+        <div class="range-thumb" id="rangeThumb">
+          <svg viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="eyeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#FDE047" />
+                <stop offset="50%" stop-color="#FBBF24" />
+                <stop offset="100%" stop-color="#F59E0B" />
+              </linearGradient>
+              <radialGradient id="irisGrad" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#FCD34D" />
+                <stop offset="60%" stop-color="#F59E0B" />
+                <stop offset="100%" stop-color="#B45309" />
+              </radialGradient>
+              <linearGradient id="pupilGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#1F2937" />
+                <stop offset="50%" stop-color="#000000" />
+                <stop offset="100%" stop-color="#1F2937" />
+              </linearGradient>
+              <radialGradient id="highlightGrad" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95" />
+                <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+              </radialGradient>
+            </defs>
+
+            <path d="M 5 30 Q 50 -5 95 30 Q 50 65 5 30 Z"
+                  fill="url(#eyeGrad)" stroke="#F59E0B" stroke-width="1.5" />
+
+            <circle cx="50" cy="30" r="22"
+                    fill="url(#irisGrad)" stroke="#92400E" stroke-width="1.5" />
+
+            <ellipse cx="50" cy="30" rx="4" ry="17"
+                     fill="url(#pupilGrad)" stroke="#000000" stroke-width="0.5" />
+
+            <ellipse cx="50" cy="30" rx="3" ry="15"
+                     fill="none" stroke="#374151" stroke-width="0.5" opacity="0.5" />
+
+            <circle cx="42" cy="22" r="4" fill="url(#highlightGrad)" />
+            <circle cx="58" cy="38" r="1.5" fill="#FFFFFF" opacity="0.6" />
+          </svg>
+        </div>
+      </div>
+
+      <div class="range-labels-row">
+        <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
+      </div>
+
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="modeUnderBtn" onclick="setMode('under')">
+          <span class="mode-icon">↓</span> Roll Under
+        </button>
+        <button class="mode-btn" id="modeOverBtn" onclick="setMode('over')">
+          <span class="mode-icon">↑</span> Roll Over
+        </button>
+      </div>
+    </div>
+
+    <div class="payout-block">
+      <div class="payout-row">
+        <div class="payout-main">
+          <div class="payout-label">Payout</div>
+          <div class="payout-value"><span id="payoutMultiplier">1.98</span><span class="x-mark">x</span></div>
+        </div>
+        <div class="payout-divider"></div>
+        <div class="payout-stats">
+          <div class="payout-stat">
+            <span class="payout-stat-label">Potential win:</span>
+            <span class="payout-stat-value win-amount" id="potentialWin">0.98 USDT</span>
+          </div>
+          <div class="payout-stat">
+            <span class="payout-stat-label">Chance:</span>
+            <span class="payout-stat-value chance-amount" id="chanceDisplay">50.00%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass-card">
+      <div class="bet-row">
+        <label>Bet Amount</label>
+        <div class="bet-input-wrap">
+          <input type="number" id="betAmount" value="1" min="0" step="0.01" />
+          <span class="unit">(SAT)</span>
+        </div>
+        <div class="bet-multipliers">
+          <button onclick="halveBet()">1/2</button>
+          <button onclick="doubleBet()">2x</button>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-item">
+          <label>Win Chance (%)</label>
+          <input type="number" id="winChance" value="50.00" min="1" max="98" step="0.01" />
+        </div>
+        <div class="stat-item">
+          <label>Profit on Win (SAT)</label>
+          <div class="value" id="profitOnWin">0.98</div>
+        </div>
+      </div>
+
+      <div class="controls-row">
+        <button class="control-btn" id="stopOnWinBtn">Stop on Win</button>
+        <button class="control-btn" id="autoRollBtn" onclick="openAutoSettings()">
+          Auto Roll <span id="speedIndicator" class="speed-indicator" style="display: none;">1x</span>
+        </button>
+      </div>
+
+      <button class="roll-btn" onclick="rollDice()">🎯 Roll!</button>
+    </div>
+
+    <div class="history-card">
+      <div class="history-title">📊 Game History</div>
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Bet (USDT)</th>
+            <th>Result</th>
+            <th>Amount (USDT)</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- Generic Popup -->
+  <div class="popup-overlay" id="popupOverlay">
+    <div class="popup-content">
+      <div class="popup-icon" id="popupIcon">⚠️</div>
+      <div class="popup-title" id="popupTitle">Notification</div>
+      <div class="popup-message" id="popupMessage">Message text here</div>
+      <div class="popup-actions" id="popupActions"></div>
+    </div>
+  </div>
+
+  <!-- Auto Roll Settings Modal -->
+  <div class="settings-overlay" id="settingsOverlay">
+    <div class="settings-modal">
+      <div class="settings-header">
+        <div class="settings-title">⚙️ Auto Roll</div>
+        <button class="settings-close" onclick="closeAutoSettings()">✕</button>
+      </div>
+
+      <!-- Status -->
+      <div class="auto-status" id="autoStatus">
+        <div class="status-dot"></div>
+        <span id="autoStatusText">Ready to start</span>
+      </div>
+
+      <!-- Speed Settings -->
+      <div class="settings-section">
+        <div class="settings-section-title">Roll Speed</div>
+        <div class="speed-options">
+          <label class="speed-option selected" data-speed="1" onclick="selectSpeed(this)">
+            <input type="radio" name="speed" value="1" checked />
+            <div class="speed-label">Speed 1</div>
+            <div class="speed-desc">5 rolls/sec</div>
+          </label>
+
+          <label class="speed-option" data-speed="2" onclick="selectSpeed(this)">
+            <input type="radio" name="speed" value="2" />
+            <div class="speed-label">Speed 2</div>
+            <div class="speed-desc">10 rolls/sec</div>
+          </label>
+
+          <label class="speed-option" data-speed="3" onclick="selectSpeed(this)">
+            <input type="radio" name="speed" value="3" />
+            <div class="speed-label">Speed 3</div>
+            <div class="speed-desc">20 rolls/sec</div>
+          </label>
+
+          <label class="speed-option" data-speed="max" onclick="selectSpeed(this)">
+            <input type="radio" name="speed" value="max" />
+            <div class="speed-label">MAX</div>
+            <div class="speed-desc">10 rolls/sec (Fast)</div>
+          </label>
+        </div>
+      </div>
+
+      <!-- On Loss Strategy -->
+      <div class="settings-section">
+        <div class="settings-section-title">On Loss</div>
+        <div class="radio-group">
+          <label class="radio-option selected" data-group="onLoss" data-value="none" onclick="selectRadio(this)">
+            <input type="radio" name="onLoss" value="none" checked />
+            <div class="radio-circle"></div>
+            <div class="radio-label">
+              <div class="radio-label-text">Keep same bet</div>
+              <div class="radio-label-desc">Don't change bet amount</div>
+            </div>
+            <div class="radio-icon">➖</div>
+          </label>
+
+          <label class="radio-option" data-group="onLoss" data-value="double" onclick="selectRadio(this)">
+            <input type="radio" name="onLoss" value="double" />
+            <div class="radio-circle"></div>
+            <div class="radio-label">
+              <div class="radio-label-text">Increase bet x2</div>
+              <div class="radio-label-desc">Martingale strategy</div>
+            </div>
+            <div class="radio-icon">📈</div>
+          </label>
+
+          <label class="radio-option" data-group="onLoss" data-value="custom" onclick="selectRadio(this)">
+            <input type="radio" name="onLoss" value="custom" />
+            <div class="radio-circle"></div>
+            <div class="radio-label">
+              <div class="radio-label-text">Increase by custom</div>
+              <div class="radio-label-desc">Set your own multiplier</div>
+            </div>
+            <div class="radio-icon">⚙️</div>
+          </label>
+        </div>
+
+        <div class="settings-input-row" id="lossMultiplierRow" style="display: none;">
+          <label>Multiplier:</label>
+          <input type="number" id="lossMultiplier" value="2" min="1.1" max="10" step="0.1" />
+          <span class="unit">x</span>
+        </div>
+      </div>
+
+      <!-- On Win Strategy -->
+      <div class="settings-section">
+        <div class="settings-section-title">On Win</div>
+        <div class="radio-group">
+          <label class="radio-option selected" data-group="onWin" data-value="reset" onclick="selectRadio(this)">
+            <input type="radio" name="onWin" value="reset" checked />
+            <div class="radio-circle"></div>
+            <div class="radio-label">
+              <div class="radio-label-text">Reset to base bet</div>
+              <div class="radio-label-desc">Return to starting amount</div>
+            </div>
+            <div class="radio-icon">🔄</div>
+          </label>
+
+          <label class="radio-option" data-group="onWin" data-value="keep" onclick="selectRadio(this)">
+            <input type="radio" name="onWin" value="keep" />
+            <div class="radio-circle"></div>
+            <div class="radio-label">
+              <div class="radio-label-text">Keep same bet</div>
+              <div class="radio-label-desc">Continue with current bet</div>
+            </div>
+            <div class="radio-icon">➡️</div>
+          </label>
+
+          <label class="radio-option" data-group="onWin" data-value="stop" onclick="selectRadio(this)">
+            <input type="radio" name="onWin" value="stop" />
+            <div class="radio-circle"></div>
+            <div class="radio-label">
+              <div class="radio-label-text">Stop auto roll</div>
+              <div class="radio-label-desc">Stop after first win</div>
+            </div>
+            <div class="radio-icon">🛑</div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Mini Stats -->
+      <div class="settings-section">
+        <div class="settings-section-title">Session Stats</div>
+        <div class="stats-mini">
+          <div class="stat-mini">
+            <div class="stat-mini-label">Rounds</div>
+            <div class="stat-mini-value" id="statRounds">0</div>
+          </div>
+          <div class="stat-mini">
+            <div class="stat-mini-label">Wins</div>
+            <div class="stat-mini-value win" id="statWins">0</div>
+          </div>
+          <div class="stat-mini">
+            <div class="stat-mini-label">Losses</div>
+            <div class="stat-mini-value lose" id="statLosses">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Buttons -->
+      <div class="settings-footer">
+        <button class="settings-btn cancel" onclick="closeAutoSettings()">Cancel</button>
+        <button class="settings-btn" id="settingsActionBtn" onclick="toggleAutoFromSettings()">
+          <span id="settingsActionText">▶ Start</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Game state
+    let balance = 100.00;
+    let betAmount = 1.00;
+    let winChance = 50.00;
+    let isRolling = false;
+    let autoRollEnabled = false;
+    let autoRollInterval = null;
+    let gameMode = 'under';
+
+    // Auto roll settings
+    let autoSettings = {
+      onLoss: 'none',
+      onWin: 'reset',
+      lossMultiplier: 2,
+      baseBet: 1.00,
+      speed: 1
+    };
+
+    // Speed intervals (milliseconds) - MAX = 10 rolls/sec = 100ms
+    const speedIntervals = {
+      1: 200,    // 5 rolls per second
+      2: 100,    // 10 rolls per second
+      3: 50,     // 20 rolls per second
+      max: 100   // 10 rolls per second (fast animation)
+    };
+
+    // Session stats
+    let sessionStats = {
+      rounds: 0,
+      wins: 0,
+      losses: 0
+    };
+
+    // History
+    let gameHistory = [];
+
+    const balanceEl = document.getElementById('balance');
+    const betAmountEl = document.getElementById('betAmount');
+    const winChanceEl = document.getElementById('winChance');
+    const profitOnWinEl = document.getElementById('profitOnWin');
+    const historyBodyEl = document.getElementById('historyBody');
+    const rangeThumb = document.getElementById('rangeThumb');
+    const rangeBarContainer = document.getElementById('rangeBarContainer');
+    const autoRollBtn = document.getElementById('autoRollBtn');
+    const speedIndicator = document.getElementById('speedIndicator');
+    const modeUnderBtn = document.getElementById('modeUnderBtn');
+    const modeOverBtn = document.getElementById('modeOverBtn');
+    const diceResultNumber = document.getElementById('diceResultNumber');
+    const payoutMultiplierEl = document.getElementById('payoutMultiplier');
+    const potentialWinEl = document.getElementById('potentialWin');
+    const chanceDisplayEl = document.getElementById('chanceDisplay');
+    const popupOverlay = document.getElementById('popupOverlay');
+    const popupIcon = document.getElementById('popupIcon');
+    const popupTitle = document.getElementById('popupTitle');
+    const popupMessage = document.getElementById('popupMessage');
+    const popupActions = document.getElementById('popupActions');
+    const settingsOverlay = document.getElementById('settingsOverlay');
+    const autoStatus = document.getElementById('autoStatus');
+    const autoStatusText = document.getElementById('autoStatusText');
+    const settingsActionBtn = document.getElementById('settingsActionBtn');
+    const settingsActionText = document.getElementById('settingsActionText');
+    const lossMultiplierRow = document.getElementById('lossMultiplierRow');
+    const lossMultiplierInput = document.getElementById('lossMultiplier');
+
+    // ===== SAVE/LOAD FUNCTIONS =====
+    function saveGameData() {
+      const data = {
+        balance,
+        betAmount,
+        winChance,
+        gameMode,
+        autoSettings,
+        sessionStats,
+        gameHistory
+      };
+      localStorage.setItem('diceGameData', JSON.stringify(data));
+    }
+
+    function loadGameData() {
+      const saved = localStorage.getItem('diceGameData');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          balance = data.balance || 100.00;
+          betAmount = data.betAmount || 1.00;
+          winChance = data.winChance || 50.00;
+          gameMode = data.gameMode || 'under';
+          autoSettings = { ...autoSettings, ...data.autoSettings };
+          sessionStats = data.sessionStats || { rounds: 0, wins: 0, losses: 0 };
+          gameHistory = data.gameHistory || [];
+          
+          // Update UI
+          betAmountEl.value = betAmount.toFixed(2);
+          winChanceEl.value = winChance.toFixed(2);
+          lossMultiplierInput.value = autoSettings.lossMultiplier;
+          
+          // Render history
+          renderHistory();
+          
+          // Update mode buttons
+          if (gameMode === 'under') {
+            modeUnderBtn.classList.add('active');
+            modeOverBtn.classList.remove('active');
+          } else {
+            modeOverBtn.classList.add('active');
+            modeUnderBtn.classList.remove('active');
+          }
+          
+          // Update speed indicator
+          updateSpeedIndicator();
+        } catch (e) {
+          console.error('Error loading saved data:', e);
+        }
+      }
+    }
+
+    function renderHistory() {
+      historyBodyEl.innerHTML = '';
+      gameHistory.slice(0, 10).forEach(record => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${record.bet.toFixed(2)}</td>
+          <td class="${record.won ? 'result-win' : 'result-lose'}">${record.won ? 'WIN' : 'LOSE'} (${record.roll.toFixed(2)})</td>
+          <td class="${record.won ? 'result-win' : 'result-lose'}">${record.won ? '+' + record.profit.toFixed(2) : '-' + record.bet.toFixed(2)}</td>
+        `;
+        historyBodyEl.appendChild(row);
+      });
+    }
+
+    function buildSegments() {
+      const segments = document.getElementById('barSegments');
+      segments.innerHTML = '';
+      for (let i = 0; i < 100; i++) {
+        const seg = document.createElement('div');
+        seg.className = 'bar-segment';
+        segments.appendChild(seg);
+      }
+    }
+
+    function calculateGameValues() {
+      const multiplier = 99 / winChance;
+      const profitOnWin = (betAmount * multiplier) - betAmount;
+      let payoutPoint;
+
+      if (gameMode === 'under') {
+        payoutPoint = winChance;
+      } else {
+        payoutPoint = 100 - winChance;
+      }
+
+      return { multiplier, payoutPoint, profitOnWin };
+    }
+
+    function updateBarColors() {
+      const segments = document.querySelectorAll('#barSegments .bar-segment');
+      const values = calculateGameValues();
+      const payoutIndex = Math.round(values.payoutPoint);
+
+      segments.forEach((seg, i) => {
+        if (gameMode === 'under') {
+          seg.className = 'bar-segment ' + (i < payoutIndex ? 'win-segment' : 'lose-segment');
+        } else {
+          seg.className = 'bar-segment ' + (i < payoutIndex ? 'lose-segment' : 'win-segment');
+        }
+      });
+    }
+
+    function updateDisplay() {
+      const values = calculateGameValues();
+
+      balanceEl.textContent = balance.toFixed(2);
+      payoutMultiplierEl.textContent = values.multiplier.toFixed(2);
+      profitOnWinEl.textContent = values.profitOnWin.toFixed(2);
+      potentialWinEl.textContent = values.profitOnWin.toFixed(2) + ' USDT';
+      chanceDisplayEl.textContent = winChance.toFixed(2) + '%';
+
+      rangeBarContainer.style.setProperty('--thumb-pos', values.payoutPoint + '%');
+      rangeThumb.style.left = values.payoutPoint + '%';
+
+      updateBarColors();
+      updateSessionStats();
+      saveGameData();
+    }
+
+    function setMode(mode) {
+      gameMode = mode;
+      if (mode === 'under') {
+        modeUnderBtn.classList.add('active');
+        modeOverBtn.classList.remove('active');
+      } else {
+        modeOverBtn.classList.add('active');
+        modeUnderBtn.classList.remove('active');
+      }
+      updateDisplay();
+    }
+
+    function halveBet() {
+      betAmount = Math.max(0.01, betAmount / 2);
+      betAmountEl.value = betAmount.toFixed(2);
+      updateDisplay();
+    }
+
+    function doubleBet() {
+      betAmount = betAmount * 2;
+      betAmountEl.value = betAmount.toFixed(2);
+      updateDisplay();
+    }
+
+    betAmountEl.addEventListener('input', (e) => {
+      betAmount = parseFloat(e.target.value) || 0;
+      if (betAmount > balance && balance > 0) {
+        betAmount = balance;
+        betAmountEl.value = betAmount.toFixed(2);
+      }
+      updateDisplay();
+    });
+
+    winChanceEl.addEventListener('input', (e) => {
+      winChance = parseFloat(e.target.value) || 50;
+      winChance = Math.max(1, Math.min(98, winChance));
+      updateDisplay();
+    });
+
+    lossMultiplierInput.addEventListener('input', (e) => {
+      autoSettings.lossMultiplier = parseFloat(e.target.value) || 2;
+      updateDisplay();
+    });
+
+    // ===== SPEED SELECTION =====
+    function selectSpeed(el) {
+      const speed = el.dataset.speed;
+      
+      document.querySelectorAll('.speed-option').forEach(opt => {
+        opt.classList.remove('selected');
+      });
+      el.classList.add('selected');
+      el.querySelector('input[type="radio"]').checked = true;
+      
+      autoSettings.speed = speed;
+      updateSpeedIndicator();
+      updateDisplay();
+    }
+
+    function updateSpeedIndicator() {
+      if (autoRollEnabled) {
+        const speedText = autoSettings.speed === 'max' ? 'MAX' : `${autoSettings.speed}x`;
+        speedIndicator.textContent = speedText;
+        speedIndicator.style.display = 'inline-flex';
+      } else {
+        speedIndicator.style.display = 'none';
+      }
+    }
+
+    // ===== AUTO ROLL SETTINGS =====
+    function openAutoSettings() {
+      settingsOverlay.classList.add('active');
+      updateSettingsUI();
+    }
+
+    function closeAutoSettings() {
+      settingsOverlay.classList.remove('active');
+    }
+
+    function selectRadio(el) {
+      const group = el.dataset.group;
+      const value = el.dataset.value;
+
+      document.querySelectorAll(`.radio-option[data-group="${group}"]`).forEach(opt => {
+        opt.classList.remove('selected');
+      });
+      el.classList.add('selected');
+      el.querySelector('input[type="radio"]').checked = true;
+
+      if (group === 'onLoss') {
+        autoSettings.onLoss = value;
+        lossMultiplierRow.style.display = value === 'custom' ? 'flex' : 'none';
+      } else if (group === 'onWin') {
+        autoSettings.onWin = value;
+      }
+
+      updateSettingsUI();
+    }
+
+    function updateSettingsUI() {
+      if (autoRollEnabled) {
+        autoStatus.classList.add('active');
+        const speedText = autoSettings.speed === 'max' ? 'MAX' : `${autoSettings.speed}x`;
+        autoStatusText.textContent = `Auto rolling... Speed ${speedText}`;
+        settingsActionBtn.className = 'settings-btn stop';
+        settingsActionText.textContent = '⏹ Stop';
+      } else {
+        autoStatus.classList.remove('active');
+        autoStatusText.textContent = 'Ready to start';
+        settingsActionBtn.className = 'settings-btn start';
+        settingsActionText.textContent = '▶ Start';
+      }
+
+      document.querySelectorAll('.radio-option').forEach(opt => {
+        const group = opt.dataset.group;
+        const value = opt.dataset.value;
+        if (group === 'onLoss' && value === autoSettings.onLoss) {
+          opt.classList.add('selected');
+          opt.querySelector('input').checked = true;
+        } else if (group === 'onWin' && value === autoSettings.onWin) {
+          opt.classList.add('selected');
+          opt.querySelector('input').checked = true;
+        }
+      });
+
+      document.querySelectorAll('.speed-option').forEach(opt => {
+        if (opt.dataset.speed == autoSettings.speed) {
+          opt.classList.add('selected');
+          opt.querySelector('input').checked = true;
+        }
+      });
+
+      lossMultiplierRow.style.display = autoSettings.onLoss === 'custom' ? 'flex' : 'none';
+      lossMultiplierInput.value = autoSettings.lossMultiplier;
+    }
+
+    function toggleAutoFromSettings() {
+      if (autoRollEnabled) {
+        stopAutoRoll();
+      } else {
+        startAutoRollFromSettings();
+        // Auto-close settings modal after starting
+        setTimeout(() => {
+          closeAutoSettings();
+        }, 300);
+      }
+      updateSettingsUI();
+      updateAutoRollButton();
+    }
+
+    function startAutoRollFromSettings() {
+      if (betAmount <= 0) {
+        showPopup('warning', '⚠️ Invalid Bet', 'Please enter a valid bet amount.', [
+          { text: 'OK', style: 'primary' }
+        ]);
+        return;
+      }
+
+      if (betAmount > balance) {
+        showPopup('warning', '⚠️ Insufficient Balance', 'Your bet exceeds your balance.', [
+          { text: 'OK', style: 'primary' }
+        ]);
+        return;
+      }
+
+      autoSettings.baseBet = betAmount;
+      sessionStats = { rounds: 0, wins: 0, losses: 0 };
+
+      autoRollEnabled = true;
+      updateSpeedIndicator();
+
+      rollDice(true);
+
+      if (autoRollInterval) clearInterval(autoRollInterval);
+      const interval = speedIntervals[autoSettings.speed];
+      autoRollInterval = setInterval(() => {
+        if (!isRolling && autoRollEnabled) {
+          rollDice(true);
+        }
+      }, interval);
+    }
+
+    function stopAutoRoll() {
+      autoRollEnabled = false;
+      if (autoRollInterval) {
+        clearInterval(autoRollInterval);
+        autoRollInterval = null;
+      }
+      updateSpeedIndicator();
+      updateDisplay();
+    }
+
+    function updateAutoRollButton() {
+      if (autoRollEnabled) {
+        autoRollBtn.classList.add('active');
+        const speedText = autoSettings.speed === 'max' ? 'MAX' : `${autoSettings.speed}x`;
+        autoRollBtn.innerHTML = `⏹ Stop Auto <span class="speed-indicator">${speedText}</span>`;
+      } else {
+        autoRollBtn.classList.remove('active');
+        autoRollBtn.innerHTML = 'Auto Roll <span id="speedIndicator" class="speed-indicator" style="display: none;">1x</span>';
+      }
+    }
+
+    function updateSessionStats() {
+      document.getElementById('statRounds').textContent = sessionStats.rounds;
+      document.getElementById('statWins').textContent = sessionStats.wins;
+      document.getElementById('statLosses').textContent = sessionStats.losses;
+    }
+
+    // ===== POPUP FUNCTIONS =====
+    function showPopup(type, title, message, actions = []) {
+      popupIcon.className = 'popup-icon ' + type;
+      const icons = { error: '❌', warning: '⚠️', success: '✅', info: 'ℹ️' };
+      popupIcon.textContent = icons[type] || '⚠️';
+      popupTitle.textContent = title;
+      popupMessage.textContent = message;
+      popupActions.innerHTML = '';
+      actions.forEach(action => {
+        const btn = document.createElement('button');
+        btn.className = 'popup-btn ' + (action.style || 'secondary');
+        btn.textContent = action.text;
+        btn.onclick = () => { closePopup(); if (action.callback) action.callback(); };
+        popupActions.appendChild(btn);
+      });
+      popupOverlay.classList.add('active');
+    }
+
+    function closePopup() { popupOverlay.classList.remove('active'); }
+
+    function showDepositPopup() {
+      showPopup('info', '💳 Deposit Funds', 'Add funds to your balance to continue playing.', [
+        {
+          text: 'Deposit 100 USDT',
+          style: 'deposit',
+          callback: () => {
+            balance += 100;
+            updateDisplay();
+            showPopup('success', '✅ Deposit Successful', '100 USDT has been added to your balance!', [
+              { text: 'Continue', style: 'primary' }
+            ]);
+          }
+        },
+        { text: 'Cancel', style: 'secondary' }
+      ]);
+    }
+
+    function showWithdrawPopup() {
+      if (balance <= 0) {
+        showPopup('warning', '⚠️ No Funds', 'Your balance is empty. Please deposit funds first.', [
+          { text: 'Deposit', style: 'deposit', callback: showDepositPopup },
+          { text: 'Close', style: 'secondary' }
+        ]);
+        return;
+      }
+      showPopup('info', '💸 Withdraw Funds', `Current balance: ${balance.toFixed(2)} USDT. Withdrawal feature coming soon!`, [
+        { text: 'OK', style: 'primary' }
+      ]);
+    }
+
+    // ===== ROLL DICE =====
+    function rollDice(isAuto = false) {
+      if (isRolling) return;
+
+      if (betAmount <= 0) {
+        if (!isAuto) {
+          showPopup('warning', '⚠️ Invalid Bet', 'Please enter a valid bet amount greater than 0.', [
+            { text: 'OK', style: 'primary' }
+          ]);
+        }
+        return;
+      }
+
+      if (betAmount > balance) {
+        if (isAuto) {
+          betAmount = balance;
+          betAmountEl.value = betAmount.toFixed(2);
+          updateDisplay();
+          if (balance <= 0) {
+            stopAutoRoll();
+            showPopup('error', ' Balance Empty', 'Auto roll stopped. Please deposit funds.', [
+              { text: 'Deposit', style: 'deposit', callback: showDepositPopup },
+              { text: 'Close', style: 'secondary' }
+            ]);
+          }
+          return;
+        } else {
+          betAmount = balance;
+          betAmountEl.value = betAmount.toFixed(2);
+          updateDisplay();
+          showPopup('warning', '️ Insufficient Balance', `Your bet was adjusted to your full balance of ${balance.toFixed(2)} USDT.`, [
+            { text: 'Deposit Funds', style: 'deposit', callback: showDepositPopup },
+            { text: 'Continue', style: 'secondary' }
+          ]);
+        }
+      }
+
+      if (balance <= 0) {
+        if (isAuto) {
+          stopAutoRoll();
+          showPopup('error', '❌ Game Over', 'Your balance is empty! Auto roll stopped.', [
+            {
+              text: 'Deposit 100 USDT',
+              style: 'deposit',
+              callback: () => {
+                balance += 100;
+                updateDisplay();
+                showPopup('success', '✅ Balance Restored', '100 USDT has been added.', [
+                  { text: 'Play', style: 'primary' }
+                ]);
+              }
+            },
+            { text: 'Cancel', style: 'secondary' }
+          ]);
+        } else {
+          showPopup('error', '❌ Game Over', 'Your balance is empty! Please deposit funds to continue playing.', [
+            {
+              text: 'Deposit 100 USDT',
+              style: 'deposit',
+              callback: () => {
+                balance += 100;
+                updateDisplay();
+                showPopup('success', '✅ Balance Restored', '100 USDT has been added.', [
+                  { text: 'Play', style: 'primary' }
+                ]);
+              }
+            },
+            { text: 'Cancel', style: 'secondary' }
+          ]);
+        }
+        return;
+      }
+
+      isRolling = true;
+
+      const values = calculateGameValues();
+      const roll = Math.random() * 100;
+
+      rangeThumb.classList.remove('returning');
+      rangeThumb.classList.add('animating');
+      rangeThumb.style.left = '0%';
+
+      // Fast animation for auto mode
+      const animSpeed = isAuto ? 10 : 100;
+      const resultDelay = isAuto ? 20 : 600;
+      const returnDelay = isAuto ? 10 : 300;
+
+      setTimeout(() => {
+        rangeThumb.style.left = roll + '%';
+
+        setTimeout(() => {
+          diceResultNumber.textContent = roll.toFixed(2);
+
+          let won;
+          if (gameMode === 'under') {
+            won = roll < values.payoutPoint;
+          } else {
+            won = roll > values.payoutPoint;
+          }
+
+          diceResultNumber.classList.remove('win-flash', 'lose-flash');
+          void diceResultNumber.offsetWidth;
+          diceResultNumber.classList.add(won ? 'win-flash' : 'lose-flash');
+
+          sessionStats.rounds++;
+          if (won) {
+            sessionStats.wins++;
+            balance += values.profitOnWin;
+          } else {
+            sessionStats.losses++;
+            balance -= betAmount;
+          }
+
+          // Save to history
+          const record = {
+            bet: betAmount,
+            roll: roll,
+            won: won,
+            profit: won ? values.profitOnWin : -betAmount
+          };
+          gameHistory.unshift(record);
+          if (gameHistory.length > 50) gameHistory.pop();
+          renderHistory();
+
+          // Auto roll strategy
+          if (autoRollEnabled) {
+            if (won) {
+              if (autoSettings.onWin === 'reset') {
+                betAmount = autoSettings.baseBet;
+              } else if (autoSettings.onWin === 'stop') {
+                stopAutoRoll();
+              }
+            } else {
+              if (autoSettings.onLoss === 'double') {
+                betAmount = betAmount * 2;
+              } else if (autoSettings.onLoss === 'custom') {
+                betAmount = betAmount * autoSettings.lossMultiplier;
+              }
+            }
+
+            betAmountEl.value = betAmount.toFixed(2);
+
+            if (betAmount > balance) {
+              stopAutoRoll();
+              showPopup('warning', '⚠️ Bet Exceeds Balance', `Auto roll stopped. Bet (${betAmount.toFixed(2)}) exceeds balance (${balance.toFixed(2)}).`, [
+                { text: 'Deposit', style: 'deposit', callback: showDepositPopup },
+                { text: 'Close', style: 'secondary' }
+              ]);
+            }
+          }
+
+          updateDisplay();
+
+          setTimeout(() => {
+            rangeThumb.classList.remove('animating');
+            rangeThumb.classList.add('returning');
+            rangeThumb.style.left = values.payoutPoint + '%';
+
+            setTimeout(() => {
+              rangeThumb.classList.remove('returning');
+              isRolling = false;
+            }, isAuto ? 10 : 500);
+          }, returnDelay);
+
+        }, resultDelay);
+      }, animSpeed);
+    }
+
+    settingsOverlay.addEventListener('click', (e) => {
+      if (e.target === settingsOverlay) {
+        closeAutoSettings();
+      }
+    });
+
+    // Initialize
+    buildSegments();
+    loadGameData();
+    updateDisplay();
+  </script>
+</body>
+</html>
