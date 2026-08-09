@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Кино — Продвинутый Поиск</title>
+    <style>
+        /* Базовая темная палитра */
+        :root {
+            --bg-page: #16181f; 
+            --bg-card: #20232b; 
+            --text-primary: #ffffff; 
+            --text-secondary: #8c93a1; 
+            --border-color: #2c303a; 
+            --accent-blue: #0056b3;
+            --badge-orange: #f39c12;
+            --badge-blue: #2980b9;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #searchPage {
+            max-width: 800px; margin: 0 auto; padding: 20px; padding-bottom: 60px; transition: opacity 0.3s;
+        }
+
+        .gradient-text {
+            background: linear-gradient(90deg, #4dc0ed, #d06ffd, #f9a882);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text; color: transparent; font-weight: bold;
+        }
+
+        h1 { text-align: center; margin-bottom: 20px; font-size: 26px; }
+
+        .filters-wrapper {
+            background: var(--bg-card); padding: 15px; border-radius: 20px;
+            border: 1px solid var(--border-color); margin-bottom: 25px;
+            display: flex; flex-direction: column; gap: 12px;
+        }
+
+        /* Контейнер поисковой строки и истории */
+        .search-input-container {
+            position: relative;
+            width: 100%;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-input-container input {
+            width: 100%;
+            padding-right: 40px;
+        }
+
+        .history-toggle-btn {
+            position: absolute;
+            right: 12px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px 8px;
+            line-height: 1;
+            user-select: none;
+            transition: color 0.2s;
+        }
+
+        .history-toggle-btn:hover {
+            color: var(--text-primary);
+        }
+
+        /* Выпадающий список истории */
+        .history-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            z-index: 100;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        .history-dropdown.active {
+            display: block;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .clear-history-btn {
+            background: none;
+            border: none;
+            color: #ff5e5e;
+            cursor: pointer;
+            font-size: 12px;
+            padding: 0;
+            font-weight: 600;
+        }
+
+        .clear-history-btn:hover {
+            text-decoration: underline;
+        }
+
+        .history-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            max-height: 240px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .history-item-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            overflow: hidden;
+            flex: 1;
+        }
+
+        .history-icon {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .history-text {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-primary);
+        }
+
+        .delete-item-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 2px 6px;
+            line-height: 1;
+            margin-left: 10px;
+        }
+
+        .delete-item-btn:hover {
+            color: #ff5e5e;
+        }
+
+        .filters-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+        .filters-wrapper input, .filters-wrapper select {
+            flex: 1; min-width: 120px; font-size: 15px; padding: 12px;
+            background: var(--bg-page); border: 1px solid var(--border-color);
+            color: var(--text-primary); border-radius: 12px; outline: none;
+        }
+
+        .gradient-border-btn {
+            display: flex; align-items: center; justify-content: center;
+            padding: 12px; border: 2px solid transparent; border-radius: 12px; 
+            background-image: linear-gradient(var(--bg-card), var(--bg-card)), linear-gradient(90deg, #4dc0ed, #d06ffd, #f9a882);
+            background-origin: border-box; background-clip: padding-box, border-box;
+            cursor: pointer; width: 100%; outline: none; font-size: 16px; font-weight: bold;
+        }
+
+        .movies-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px;
+        }
+
+        .movie-card { display: flex; flex-direction: column; cursor: pointer; transition: transform 0.2s; }
+        .movie-card:hover { transform: translateY(-4px); }
+
+        .movie-poster-container {
+            position: relative; width: 100%; aspect-ratio: 2 / 3; 
+            border-radius: 12px; background-color: var(--bg-card); margin-bottom: 8px; display: flex;
+        }
+
+        .movie-poster { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
+
+        .badge {
+            position: absolute; top: 8px; padding: 3px 6px; border-radius: 4px;
+            font-size: 12px; font-weight: bold; color: #fff; z-index: 2;
+        }
+        .badge-rating { left: 8px; background-color: var(--badge-orange); }
+        .badge-year { right: 8px; background-color: var(--badge-blue); }
+
+        .truncate-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+
+        .movie-card-title { font-size: 15px; font-weight: bold; margin-bottom: 2px; }
+        .movie-card-genre { font-size: 13px; color: var(--text-secondary); }
+
+        .load-more-container { display: none; justify-content: center; margin-top: 30px; }
+        .loader { color: var(--text-secondary); text-align: center; grid-column: 1 / -1; padding: 20px;}
+
+        /* =========================================
+           ДЕТАЛЬНАЯ СТРАНИЦА И СОСТОЯНИЯ ОШИБОК
+           ========================================= */
+        #detailPage {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: var(--bg-page); z-index: 1000; overflow-y: auto; overflow-x: hidden;
+            flex-direction: column; align-items: center;
+        }
+
+        .detail-bg-blur {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-size: cover; background-position: center;
+            filter: blur(40px) brightness(0.3); z-index: -1; transition: background 0.3s;
+        }
+
+        .detail-header {
+            width: 100%; padding: 20px; display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 10;
+        }
+
+        .back-btn {
+            background: rgba(255,255,255,0.2); border: none; color: white;
+            width: 40px; height: 40px; border-radius: 12px; font-size: 20px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(10px);
+        }
+
+        .detail-content {
+            display: flex; flex-direction: column; align-items: center;
+            padding: 0 20px 40px 20px; max-width: 600px; width: 100%; text-align: center;
+        }
+
+        .detail-poster-wrapper {
+            width: 60%; max-width: 250px; aspect-ratio: 2/3;
+            border-radius: 16px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); display: flex;
+        }
+
+        .detail-poster { width: 100%; height: 100%; border-radius: 16px; object-fit: cover; display: block; }
+
+        .detail-title { font-size: 26px; font-weight: bold; margin-bottom: 12px; }
+
+        .detail-meta-line {
+            font-size: 14px; color: #ced4da; margin-bottom: 25px; line-height: 1.5;
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 6px;
+        }
+
+        .meta-rating { color: #00f260; font-weight: bold; }
+
+        /* Синяя кнопка (Активная) */
+        .watch-btn {
+            background-color: var(--accent-blue); color: white; text-decoration: none; font-size: 18px; font-weight: bold;
+            padding: 16px 30px; border-radius: 12px; width: 100%; max-width: 300px;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 6px 20px rgba(0, 86, 179, 0.4); margin-bottom: 30px; transition: background 0.2s;
+        }
+        .watch-btn:hover { background-color: #004494; }
+
+        /* Серая кнопка (Неактивная - когда нет фильма) */
+        .watch-btn.disabled {
+            background-color: #3f4652 !important;
+            color: #adb5bd !important;
+            box-shadow: none !important;
+            pointer-events: none; /* Блокирует любые нажатия */
+            cursor: not-allowed;
+        }
+
+        .detail-description-box {
+            background: rgba(0,0,0,0.3); padding: 20px; border-radius: 16px;
+            font-size: 15px; color: #adb5bd; line-height: 1.5; width: 100%; display: flex; gap: 10px; text-align: left;
+        }
+        .quote-mark { font-size: 20px; color: #6c757d; font-weight: bold; }
+        .desc-loader { font-size: 13px; font-style: italic; color: #6c757d; }
+
+        /* Заглушка (Неоновая) */
+        .no-poster-placeholder {
+            width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+            background-color: var(--bg-page); border-radius: inherit; 
+            border: 3px solid transparent; 
+            background-image: linear-gradient(var(--bg-page), var(--bg-page)), linear-gradient(135deg, #00ffff 0%, #ff00ff 100%);
+            background-origin: border-box; background-clip: padding-box, border-box; padding: 15px 10px;
+        }
+
+        .no-poster-icon { width: 45%; max-width: 80px; margin-top: auto; margin-bottom: auto; }
+        .no-poster-text-box { width: 100%; text-align: center; }
+        .no-poster-divider { width: 80%; height: 1px; background: rgba(255,255,255,0.1); margin: 0 auto 8px auto; }
+        .no-poster-text-box span {
+            font-size: 11px; font-weight: bold; text-transform: uppercase;
+            background: linear-gradient(90deg, #4dc0ed, #d06ffd);
+            -webkit-background-clip: text; color: transparent;
+            display: flex; align-items: center; justify-content: center; gap: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <svg width="0" height="0" style="position: absolute;">
+        <defs>
+            <linearGradient id="iconGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#d53bf9" /> 
+                <stop offset="100%" stop-color="#7366ff" /> 
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <div id="searchPage">
+        <h1><span class="gradient-text">🎬 FilmON</span></h1>
+        <div class="filters-wrapper">
+            <div class="search-input-container" id="searchInputContainer">
+                <input type="text" id="searchInput" placeholder="Название фильма..." autocomplete="off">
+                <button type="button" class="history-toggle-btn" id="historyToggleBtn" title="История поиска">⋮</button>
+                <div id="searchHistoryDropdown" class="history-dropdown"></div>
+            </div>
+            <div class="filters-row">
+                <select id="genreSelect"><option value="">Все жанры</option></select>
+                <input type="number" id="yearSelect" placeholder="Год (напр. 2024)" min="1900" max="2030">
+            </div>
+            <button class="gradient-border-btn" onclick="searchKinopoisk(false)">
+                <span class="gradient-text">Найти фильм</span>
+            </button>
+        </div>
+        <div id="resultsGrid" class="movies-grid"></div>
+        <div class="load-more-container" id="loadMoreContainer">
+            <button class="gradient-border-btn" style="max-width: 250px;" id="loadMoreBtn" onclick="searchKinopoisk(true)">
+                <span class="gradient-text">Показать ещё</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="detailPage">
+        <div class="detail-bg-blur" id="detailBg"></div>
+        <div class="detail-header">
+            <button class="back-btn" onclick="closeMovieDetail()">❮</button>
+            <div style="width: 40px;"></div> 
+        </div>
+        <div class="detail-content">
+            <div id="detailPosterWrapper" class="detail-poster-wrapper"></div>
+            <div id="detailTitle" class="detail-title">Загрузка...</div>
+            <div id="detailMeta" class="detail-meta-line"></div>
+            
+            <a id="detailWatchBtn" href="#" target="_blank" rel="noopener noreferrer" class="watch-btn">СМОТРЕТЬ</a>
+            
+            <div class="detail-description-box">
+                <span class="quote-mark">«</span>
+                <div id="detailDescription" style="flex:1;">Загрузка описания...</div>
+                <span class="quote-mark">»</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_KEY = "b0ae37d0-74af-4ae7-a825-826d1c3a3bbf"; 
+        let allFetchedFilms = []; let nextLocalIndex = 0; let currentApiPage = 1; let totalApiPages = 1; let isFetching = false;     
+
+        /* =========================================
+           ЛОГИКА ИСТОРИИ ПОИСКА (Max 10 элементов)
+           ========================================= */
+        const HISTORY_STORAGE_KEY = "filmon_search_history";
+
+        function getSearchHistory() {
+            try {
+                const history = localStorage.getItem(HISTORY_STORAGE_KEY);
+                return history ? JSON.parse(history) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveSearchHistory(historyArray) {
+            try {
+                localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(historyArray));
+            } catch (e) {}
+        }
+
+        function addToSearchHistory(query) {
+            if (!query || !query.trim()) return;
+            const cleanQuery = query.trim();
+            let history = getSearchHistory();
+            
+            history = history.filter(item => item.toLowerCase() !== cleanQuery.toLowerCase());
+            history.unshift(cleanQuery);
+            if (history.length > 10) history = history.slice(0, 10);
+            
+            saveSearchHistory(history);
+        }
+
+        function removeFromSearchHistory(queryToRemove, e) {
+            if (e) e.stopPropagation();
+            let history = getSearchHistory();
+            history = history.filter(item => item !== queryToRemove);
+            saveSearchHistory(history);
+            
+            const searchInput = document.getElementById("searchInput");
+            renderSearchHistory(searchInput.value.trim());
+        }
+
+        function clearAllSearchHistory(e) {
+            if (e) e.stopPropagation();
+            localStorage.removeItem(HISTORY_STORAGE_KEY);
+            hideSearchHistory();
+        }
+
+        function renderSearchHistory(filterText = '') {
+            const dropdown = document.getElementById("searchHistoryDropdown");
+            const history = getSearchHistory();
+
+            let filteredHistory = history;
+            if (filterText) {
+                const lowerFilter = filterText.toLowerCase();
+                filteredHistory = history.filter(item => item.toLowerCase().includes(lowerFilter));
+            }
+
+            if (filteredHistory.length === 0) {
+                dropdown.classList.remove("active");
+                dropdown.innerHTML = "";
+                return;
+            }
+
+            let html = `
+                <div class="history-header">
+                    <span>ИСТОРИЯ ПОИСКА</span>
+                    <button class="clear-history-btn" onclick="clearAllSearchHistory(event)">Очистить</button>
+                </div>
+                <div class="history-list">
+            `;
+
+            filteredHistory.forEach(item => {
+                const safeItem = item.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                html += `
+                    <div class="history-item" onclick="selectHistoryItem('${safeItem}')">
+                        <div class="history-item-left">
+                            <span class="history-icon">🔍</span>
+                            <span class="history-text">${item}</span>
+                        </div>
+                        <button class="delete-item-btn" title="Удалить" onclick="removeFromSearchHistory('${safeItem}', event)">✕</button>
+                    </div>
+                `;
+            });
+
+            html += `</div>`;
+            dropdown.innerHTML = html;
+            dropdown.classList.add("active");
+        }
+
+        function hideSearchHistory() {
+            const dropdown = document.getElementById("searchHistoryDropdown");
+            dropdown.classList.remove("active");
+        }
+
+        function selectHistoryItem(value) {
+            const searchInput = document.getElementById("searchInput");
+            searchInput.value = value;
+            hideSearchHistory();
+            searchKinopoisk(false);
+        }
+
+        function getNoPosterHtml() {
+            return `
+            <div class="no-poster-placeholder">
+                <svg class="no-poster-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="url(#iconGradient)" stroke-width="8"/>
+                    <path d="M38 32 L38 68 L72 50 Z" fill="none" stroke="url(#iconGradient)" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+                </svg>
+                <div class="no-poster-text-box">
+                    <div class="no-poster-divider"></div>
+                    <span>🎬 FilmON</span>
+                </div>
+            </div>`;
+        }
+
+        function isValidPosterUrl(url) {
+            return url && url !== 'null' && !url.includes('null');
+        }
+
+        // --- УЛУЧШЕННЫЕ ПЕРЕХВАТЧИКИ ОШИБОК ---
+        window.handlePosterError = function(imgElement, index) {
+            imgElement.outerHTML = getNoPosterHtml();
+            // Записываем в память, что этот фильм сломан
+            if (allFetchedFilms[index]) {
+                allFetchedFilms[index].isBroken = true;
+            }
+        };
+
+        window.handleDetailPosterError = function(imgElement, index) {
+            imgElement.outerHTML = getNoPosterHtml();
+            document.getElementById("detailBg").style.backgroundImage = "none";
+            if (allFetchedFilms[index]) {
+                allFetchedFilms[index].isBroken = true;
+            }
+            // Вызываем функцию отключения интерфейса
+            setMovieUnavailableState();
+        };
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            const searchInput = document.getElementById("searchInput");
+            const historyToggleBtn = document.getElementById("historyToggleBtn");
+            const searchInputContainer = document.getElementById("searchInputContainer");
+
+            searchInput.addEventListener("focus", () => {
+                renderSearchHistory(searchInput.value.trim());
+            });
+
+            searchInput.addEventListener("input", () => {
+                renderSearchHistory(searchInput.value.trim());
+            });
+
+            historyToggleBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const dropdown = document.getElementById("searchHistoryDropdown");
+                if (dropdown.classList.contains("active")) {
+                    hideSearchHistory();
+                } else {
+                    renderSearchHistory(searchInput.value.trim());
+                }
+            });
+
+            document.addEventListener("click", (e) => {
+                if (!searchInputContainer.contains(e.target)) {
+                    hideSearchHistory();
+                }
+            });
+
+            try {
+                const res = await fetch("https://kinopoiskapiunofficial.tech/api/v2.2/films/filters", { headers: { 'X-API-KEY': API_KEY } });
+                const data = await res.json();
+                const genreSelect = document.getElementById("genreSelect");
+                const validGenres = data.genres.filter(g => g.genre);
+                validGenres.sort((a,b) => a.genre.localeCompare(b.genre, 'ru'));
+                validGenres.forEach(g => {
+                    const option = document.createElement("option");
+                    option.value = g.id; option.text = g.genre.charAt(0).toUpperCase() + g.genre.slice(1);
+                    genreSelect.appendChild(option);
+                });
+            } catch(e) { console.error(e); }
+        });
+
+        async function searchKinopoisk(isLoadMore = false) {
+            if (isFetching) return; 
+
+            const keyword = document.getElementById("searchInput").value.trim();
+            const genre = document.getElementById("genreSelect").value;
+            const year = document.getElementById("yearSelect").value.trim();
+            
+            if (!keyword && !genre && !year) { alert("Пожалуйста, заполните фильтры."); return; }
+
+            if (!isLoadMore && keyword) {
+                addToSearchHistory(keyword);
+                hideSearchHistory();
+            }
+
+            const resultsGrid = document.getElementById("resultsGrid");
+            const loadMoreBtnContainer = document.getElementById("loadMoreContainer");
+            const loadMoreBtn = document.getElementById("loadMoreBtn");
+
+            if (!isLoadMore) {
+                resultsGrid.innerHTML = "<div class='loader'>Поиск точных совпадений...</div>";
+                allFetchedFilms = []; nextLocalIndex = 0; currentApiPage = 1; totalApiPages = 1;
+                loadMoreBtnContainer.style.display = "none";
+            }
+
+            isFetching = true;
+            if (isLoadMore) loadMoreBtn.innerHTML = "<span class='gradient-text'>Загрузка...</span>";
+
+            try {
+                while (allFetchedFilms.length < nextLocalIndex + 10 && currentApiPage <= totalApiPages) {
+                    let url = `https://kinopoiskapiunofficial.tech/api/v2.2/films?page=${currentApiPage}`;
+                    if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
+                    if (genre) url += `&genres=${genre}`;
+                    if (year) url += `&yearFrom=${year}&yearTo=${year}`;
+
+                    const response = await fetch(url, { method: 'GET', headers: { 'X-API-KEY': API_KEY } });
+                    if (!response.ok) throw new Error(`Ошибка`);
+                    const data = await response.json();
+                    
+                    totalApiPages = data.totalPages || 0;
+                    let rawItems = data.items || data.films || [];
+                    if (rawItems.length === 0) break; 
+
+                    if (keyword) {
+                        const lowerKeyword = keyword.toLowerCase();
+                        rawItems = rawItems.filter(film => {
+                            const titleRu = (film.nameRu || '').toLowerCase();
+                            const titleEn = (film.nameEn || '').toLowerCase();
+                            const titleOrig = (film.nameOriginal || '').toLowerCase();
+                            return titleRu.includes(lowerKeyword) || titleEn.includes(lowerKeyword) || titleOrig.includes(lowerKeyword);
+                        });
+                        rawItems.sort((a, b) => {
+                            const aTitle = (a.nameRu || a.nameEn || '').toLowerCase();
+                            const bTitle = (b.nameRu || b.nameEn || '').toLowerCase();
+                            const aExact = aTitle === lowerKeyword ? 1 : (aTitle.startsWith(lowerKeyword) ? 2 : 3);
+                            const bExact = bTitle === lowerKeyword ? 1 : (bTitle.startsWith(lowerKeyword) ? 2 : 3);
+                            return aExact - bExact;
+                        });
+                    }
+                    allFetchedFilms = allFetchedFilms.concat(rawItems);
+                    currentApiPage++; 
+                }
+            } catch (error) {
+                if (!isLoadMore) resultsGrid.innerHTML = `<div class='loader' style='color:#f9a882;'>Ошибка сети.</div>`;
+                isFetching = false; return;
+            }
+
+            if (!isLoadMore) resultsGrid.innerHTML = "";
+            const batch = allFetchedFilms.slice(nextLocalIndex, nextLocalIndex + 10);
+            
+            if (batch.length === 0 && nextLocalIndex === 0) {
+                resultsGrid.innerHTML = "<div class='loader'>Фильмы не найдены.</div>";
+                loadMoreBtnContainer.style.display = "none";
+                isFetching = false; return;
+            }
+
+            batch.forEach((film, index) => {
+                const globalIndex = nextLocalIndex + index; 
+                const title = film.nameRu || film.nameEn || film.nameOriginal || "Без названия";
+                const genresString = film.genres && film.genres.length > 0 ? film.genres.map(g => g.genre).join(', ') : 'Жанр не указан';
+                const ratingBadge = film.ratingKinopoisk ? `<div class="badge badge-rating">${film.ratingKinopoisk}</div>` : '';
+                const yearBadge = film.year ? `<div class="badge badge-year">${film.year}</div>` : '';
+
+                let posterContent = "";
+                if (!isValidPosterUrl(film.posterUrlPreview)) {
+                    posterContent = getNoPosterHtml();
+                    film.isBroken = true; // Сразу помечаем фильм как сломанный
+                } else {
+                    // Передаем globalIndex в onerror, чтобы скрипт знал, какой фильм сломался
+                    posterContent = `<img src="${film.posterUrlPreview}" class="movie-poster" alt="Постер" loading="lazy" onerror="handlePosterError(this, ${globalIndex})">`;
+                }
+
+                const card = document.createElement("div");
+                card.className = "movie-card";
+                card.onclick = () => openMovieDetail(globalIndex); 
+                card.innerHTML = `
+                    <div class="movie-poster-container">
+                        ${ratingBadge}
+                        ${yearBadge}
+                        ${posterContent}
+                    </div>
+                    <div class="movie-card-title truncate-text" title="${title}">${title}</div>
+                    <div class="movie-card-genre truncate-text">${genresString}</div>
+                `;
+                resultsGrid.appendChild(card);
+            });
+
+            nextLocalIndex += batch.length;
+            if (nextLocalIndex < allFetchedFilms.length || currentApiPage <= totalApiPages) {
+                loadMoreBtnContainer.style.display = "flex";
+                loadMoreBtn.innerHTML = "<span class='gradient-text'>Показать ещё</span>";
+            } else {
+                loadMoreBtnContainer.style.display = "none";
+            }
+            isFetching = false;
+        }
+
+        // --- ЛОГИКА ДЕТАЛЬНОЙ СТРАНИЦЫ ---
+        const searchPage = document.getElementById("searchPage");
+        const detailPage = document.getElementById("detailPage");
+        
+        // Функция перевода страницы в состояние "ФИЛЬМА НЕТ"
+        function setMovieUnavailableState() {
+            const watchBtn = document.getElementById("detailWatchBtn");
+            watchBtn.textContent = "Фильма нет";
+            watchBtn.classList.add("disabled"); // Применяем серый стиль
+            watchBtn.href = "javascript:void(0)"; // Отключаем ссылку
+            
+            const descHtml = `
+                Извините, но к сожалению, в нашей базе такого фильма сейчас нет. Возможно, он появится позже.<br><br>
+                Наш сервис представляет собой умную поисковую систему, а видео транслируется из открытых общедоступных источников. 
+                Мы не являемся видеохостингом и не храним файлы на своих серверах, поэтому контент не всегда доступен. 
+                Пожалуйста, попробуйте поискать что-нибудь другое!
+            `;
+            document.getElementById("detailDescription").innerHTML = descHtml;
+        }
+
+        async function openMovieDetail(index) {
+            const film = allFetchedFilms[index];
+            if (!film) return;
+
+            const filmId = film.kinopoiskId || film.filmId || film.id;
+            const title = film.nameRu || film.nameEn || film.nameOriginal || "Без названия";
+            const genresArr = film.genres ? film.genres.map(g => g.genre) : [];
+            const countriesArr = film.countries ? film.countries.map(c => c.country) : [];
+            const posterImg = film.posterUrl || film.posterUrlPreview;
+
+            const detailPosterWrapper = document.getElementById("detailPosterWrapper");
+            const detailBg = document.getElementById("detailBg");
+            const watchBtn = document.getElementById("detailWatchBtn");
+
+            // ОПРЕДЕЛЯЕМ СОСТОЯНИЕ КОНТЕНТА: Если он был помечен как сломанный в сетке, или ссылка изначально null
+            const isBrokenContent = film.isBroken || !isValidPosterUrl(posterImg);
+
+            // 1. Заполняем текстовую мету
+            document.getElementById("detailTitle").innerText = title;
+            let metaParts = [];
+            if (film.ratingKinopoisk) metaParts.push(`<span class="meta-rating">${film.ratingKinopoisk}</span>`);
+            if (film.year) metaParts.push(film.year);
+            if (genresArr.length > 0) metaParts.push(genresArr.slice(0, 2).map(g => g.charAt(0).toUpperCase() + g.slice(1)).join(', '));
+            if (countriesArr.length > 0) metaParts.push(countriesArr[0]);
+            document.getElementById("detailMeta").innerHTML = metaParts.join(' &nbsp;•&nbsp; ');
+
+            // 2. Открываем интерфейс
+            searchPage.style.display = "none"; detailPage.style.display = "flex"; window.scrollTo(0, 0);
+
+            // 3. ОБРАБОТКА В ЗАВИСИМОСТИ ОТ СОСТОЯНИЯ
+            if (isBrokenContent) {
+                // ВЕТКА А: Контента нет
+                detailPosterWrapper.innerHTML = getNoPosterHtml();
+                detailBg.style.backgroundImage = `none`;
+                setMovieUnavailableState(); 
+                // Мы НЕ делаем fetch запрос за описанием, чтобы не тратить лимиты API зря
+            } else {
+                // ВЕТКА Б: Контент есть (Нормальный режим)
+                detailPosterWrapper.innerHTML = `<img src="${posterImg}" class="detail-poster" alt="Постер" onerror="handleDetailPosterError(this, ${index})">`;
+                detailBg.style.backgroundImage = `url(${posterImg})`;
+                
+                watchBtn.textContent = "СМОТРЕТЬ";
+                watchBtn.classList.remove("disabled"); // Возвращаем синий стиль
+                watchBtn.href = `https://kinokino.vip/film/${filmId}/`;
+
+                document.getElementById("detailDescription").innerHTML = "<span class='desc-loader'>Ищем подробное описание...</span>";
+
+                // Делаем API запрос только для валидных фильмов
+                try {
+                    const res = await fetch(`https://kinopoiskapiunofficial.tech/api/v2.2/films/${filmId}`, { headers: { 'X-API-KEY': API_KEY } });
+                    if (res.ok) {
+                        const fullData = await res.json();
+                        let desc = fullData.description || fullData.shortDescription;
+                        document.getElementById("detailDescription").innerText = desc ? desc : "К сожалению, описание отсутствует.";
+                        if (fullData.ratingAgeLimits) {
+                            const ageNum = fullData.ratingAgeLimits.replace(/[^0-9]/g, '');
+                            if (ageNum) document.getElementById("detailMeta").innerHTML += ` &nbsp;•&nbsp; ${ageNum}+`;
+                        }
+                    }
+                } catch (e) { document.getElementById("detailDescription").innerText = "Не удалось загрузить описание."; }
+            }
+        }
+
+        function closeMovieDetail() { 
+            detailPage.style.display = "none"; searchPage.style.display = "block"; 
+        }
+
+        document.querySelectorAll('.filters-wrapper input, .filters-wrapper select').forEach(element => {
+            element.addEventListener('keypress', function(e) { if (e.key === 'Enter') searchKinopoisk(false); });
+        });
+    </script>
+</body>
+</html>
