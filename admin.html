@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Mini Apps</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #1C1C1E; }
+        .login-input {
+            width: 100%; background-color: #1C1C1E; border: 1px solid #333; color: #FFFFFF;
+            border-radius: 12px; padding: 14px 16px; outline: none; transition: border-color 0.2s;
+        }
+        .login-input:focus { border-color: #34C759; }
+    </style>
+</head>
+<body class="text-white h-screen flex flex-col items-center justify-center px-4">
+    <div class="w-full max-w-md bg-[#151517] p-8 rounded-2xl border border-gray-800 shadow-xl">
+        <div class="text-center mb-8">
+            <h1 class="text-[28px] font-bold text-white mb-2">Admin Panel</h1>
+            <p class="text-[#A0A0A5] text-sm">Sign in to manage Mini Apps</p>
+        </div>
+        <form id="loginForm" class="flex flex-col gap-5">
+            <div>
+                <label class="block text-[#A0A0A5] text-sm mb-2 font-medium">Email</label>
+                <input type="email" id="email" class="login-input" required>
+            </div>
+            <div>
+                <label class="block text-[#A0A0A5] text-sm mb-2 font-medium">Password</label>
+                <input type="password" id="password" class="login-input" required>
+            </div>
+            <div id="errorMessage" class="hidden text-red-400 text-sm text-center bg-red-500/10 py-2 rounded-lg"></div>
+            <button type="submit" class="w-full bg-[#34C759] text-white font-bold text-[16px] py-4 rounded-[50px] mt-2 active:opacity-70 transition-all">
+                Sign In
+            </button>
+        </form>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://ucmmcvbrgwylkamosqek.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_KuFmGY0UnXGSJmkHMvSQAQ_zxMvAwc8';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function checkSession() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) window.location.href = 'admin.html';
+        }
+        checkSession();
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const err = document.getElementById('errorMessage');
+            btn.disabled = true; btn.textContent = 'Signing in...'; err.classList.add('hidden');
+
+            const { error } = await supabase.auth.signInWithPassword({
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
+            });
+
+            if (error) {
+                err.textContent = error.message; err.classList.remove('hidden');
+                btn.disabled = false; btn.textContent = 'Sign In';
+            } else {
+                window.location.href = 'admin.html';
+            }
+        });
+    </script>
+</body>
+</html>
